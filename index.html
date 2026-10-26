@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pro Darts Zlín</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- Spolehlivý WebSocket MQTT klient -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@500;600;700;800;900&display=swap');
         
@@ -114,14 +115,14 @@
             <!-- Vytvořit -->
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
                 <span class="text-white font-black text-lg block font-num">Vytvořit hru</span>
-                <p class="text-slate-500 text-xs mt-0.5 mb-3">Nastav parametry zápasu a získej kód pro druhého hráče.</p>
+                <p class="text-slate-500 text-xs mt-0.5 mb-3">Nastav pravidla zápasu a získej kód pro druhého hráče.</p>
                 <button onclick="setupOnlineHostConfig()" class="w-full btn-blue py-3 rounded-lg text-xs uppercase font-extrabold">Vytvořit místnost</button>
             </div>
 
             <!-- Připojit se -->
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
                 <span class="text-white font-black text-lg block font-num">Připojit se ke hře</span>
-                <p class="text-slate-500 text-xs mt-0.5 mb-3">Zadej kód od protihráče.</p>
+                <p class="text-slate-500 text-xs mt-0.5 mb-3">Zadej 4místný kód od protihráče.</p>
                 <div class="flex gap-2">
                     <input id="online-join-code" type="text" maxlength="4" placeholder="KÓD" class="w-28 text-center uppercase tracking-widest font-num bg-slate-950 border border-slate-800 rounded-lg text-lg font-black text-emerald-400 outline-none focus:border-blue-500">
                     <button onclick="joinOnlineRoom()" id="btn-join-room" class="flex-grow btn-green py-3 rounded-lg text-xs uppercase font-extrabold">Připojit</button>
@@ -520,17 +521,9 @@
         let currentGameType = 'x01';
         let isOnline = false;
         let isHost = false;
-        let peer = null;
-        let connection = null;
-
-        const peerConfig = {
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:global.stun.twilio.com:3478' }
-                ]
-            }
-        };
+        let onlineRoomCode = null;
+        let mqttClient = null;
+        let myClientId = null;
 
         // ================= X01 =================
         const config = {
@@ -938,41 +931,53 @@
             }
         }
 
-        // ================= ONLINE LOGIKA =================
+        // ================= SPOLEHLIVÉ ONLINE MQTT PROPOJENÍ =================
         function generateRoomCode() {
             return Math.floor(1000 + Math.random() * 9000).toString();
         }
 
+        function connectToMqttBroker(onSuccess) {
+            myClientId = "pdarts_" + Math.random().toString(16).substr(2, 8);
+            // Veřejný, stabilní HiveMQ WebSocket broker
+            mqttClient = new Paho.MQTT.Client("broker.hivemq.com", Number(8884), "/mqtt", myClientId);
+
+            mqttClient.onConnectionLost = (responseObject) => {
+                if (responseObject.errorCode !== 0 && isOnline) {
+                    console.log("MQTT ztráta spojení:", responseObject.errorMessage);
+                }
+            };
+
+            mqttClient.onMessageArrived = (message) => {
+                try {
+                    const data = JSON.parse(message.payloadString);
+                    if (data.senderId === myClientId) return; // Ignorovat vlastní zprávy
+                    handleIncomingOnlineMessage(data);
+                } catch(e) {
+                    console.error("Chyba při čtení zprávy", e);
+                }
+            };
+
+            mqttClient.connect({
+                useSSL: true,
+                timeout: 5,
+                onSuccess: onSuccess,
+                onFailure: (err) => {
+                    alert("Nelze se spojit se serverem: " + err.errorMessage);
+                    cancelOnline();
+                }
+            });
+        }
+
         function initHostOnlineRoom() {
             const hostName = document.getElementById('online-my-name').value.trim() || "Hráč 1";
-            const code = generateRoomCode();
-            document.getElementById('online-display-code').innerText = code;
+            onlineRoomCode = generateRoomCode();
+            document.getElementById('online-display-code').innerText = onlineRoomCode;
             goToScreen('screen-online-waiting');
 
-            if (peer) {
-                try { peer.destroy(); } catch(e){}
-            }
-
-            // Unikátní prefix pro spolehlivé spojení
-            const peerId = 'prodarts-room-' + code;
-            peer = new Peer(peerId, peerConfig);
-
-            peer.on('open', () => {
-                console.log('Host čeká na kód:', code);
-            });
-
-            peer.on('connection', (conn) => {
-                connection = conn;
-                setupConnectionHandlers();
-            });
-
-            peer.on('error', (err) => {
-                if (err.type === 'unavailable-id') {
-                    initHostOnlineRoom();
-                } else {
-                    alert('Chyba online spojení: ' + err.type);
-                    goToScreen('screen-online-lobby');
-                }
+            connectToMqttBroker(() => {
+                const topic = "prodarts_zlin_room_" + onlineRoomCode;
+                mqttClient.subscribe(topic);
+                console.log("Host naslouchá na:", topic);
             });
         }
 
@@ -992,86 +997,78 @@
             isOnline = true;
             isHost = false;
             currentGameType = 'x01';
+            onlineRoomCode = code;
 
-            if (peer) {
-                try { peer.destroy(); } catch(e){}
-            }
+            connectToMqttBroker(() => {
+                const topic = "prodarts_zlin_room_" + onlineRoomCode;
+                mqttClient.subscribe(topic);
 
-            peer = new Peer(peerConfig);
-
-            peer.on('open', () => {
-                const targetHostId = 'prodarts-room-' + code;
-                connection = peer.connect(targetHostId, { reliable: true });
-
-                connection.on('open', () => {
-                    btn.innerText = "Připojit";
-                    btn.disabled = false;
-                    connection.send({
-                        type: 'JOIN_HELLO',
-                        guestName: guestName
-                    });
-                });
-
-                setupConnectionHandlers();
-            });
-
-            peer.on('error', (err) => {
                 btn.innerText = "Připojit";
                 btn.disabled = false;
-                alert('Nepodařilo se připojit k místnosti ' + code);
-                goToScreen('screen-online-lobby');
+
+                // Host se ohlásí hostovi
+                sendOnlineMessage({
+                    type: 'JOIN_REQUEST',
+                    guestName: guestName
+                });
             });
         }
 
-        function setupConnectionHandlers() {
-            connection.on('data', (data) => {
-                if (data.type === 'JOIN_HELLO' && isHost) {
-                    const hostName = document.getElementById('online-my-name').value.trim() || "Hráč 1";
-                    players = [
-                        { id: 1, name: hostName },
-                        { id: 2, name: data.guestName }
-                    ];
-                    startX01Game();
-                    connection.send({
-                        type: 'START_GAME',
-                        players: players,
-                        config: config,
-                        matchData: matchData
-                    });
-                } else if (data.type === 'START_GAME' && !isHost) {
-                    players = data.players;
-                    Object.assign(config, data.config);
-                    matchData = data.matchData;
-                    goToScreen('game-screen');
-                    updateX01UI();
-                } else if (data.type === 'SYNC') {
-                    matchData = data.matchData;
-                    updateX01UI();
-                }
-            });
+        function sendOnlineMessage(msgObj) {
+            if (!mqttClient || !mqttClient.isConnected()) return;
+            msgObj.senderId = myClientId;
+            const message = new Paho.MQTT.Message(JSON.stringify(msgObj));
+            message.destinationName = "prodarts_zlin_room_" + onlineRoomCode;
+            mqttClient.send(message);
+        }
 
-            connection.on('close', () => {
-                alert('Protihráč se odpojil.');
-                exitGameConfirmed();
-            });
+        function handleIncomingOnlineMessage(data) {
+            if (data.type === 'JOIN_REQUEST' && isHost) {
+                const hostName = document.getElementById('online-my-name').value.trim() || "Hráč 1";
+                players = [
+                    { id: 1, name: hostName },
+                    { id: 2, name: data.guestName }
+                ];
+                startX01Game();
+                sendOnlineMessage({
+                    type: 'START_MATCH',
+                    players: players,
+                    config: config,
+                    matchData: matchData
+                });
+            } else if (data.type === 'START_MATCH' && !isHost) {
+                players = data.players;
+                Object.assign(config, data.config);
+                matchData = data.matchData;
+                goToScreen('game-screen');
+                updateX01UI();
+            } else if (data.type === 'SYNC') {
+                matchData = data.matchData;
+                updateX01UI();
+            }
         }
 
         function sendOnlineSync() {
-            if (connection && connection.open) {
-                connection.send({
-                    type: 'SYNC',
-                    matchData: matchData
-                });
-            }
+            sendOnlineMessage({
+                type: 'SYNC',
+                matchData: matchData
+            });
         }
 
         function cancelOnline() {
-            if (peer) try { peer.destroy(); } catch(e){}
+            if (mqttClient && mqttClient.isConnected()) {
+                try { mqttClient.disconnect(); } catch(e){}
+            }
+            isOnline = false;
+            const btn = document.getElementById('btn-join-room');
+            if (btn) { btn.innerText = "Připojit"; btn.disabled = false; }
             goToScreen('screen-online-lobby');
         }
 
         function exitGameConfirmed() {
-            if (peer) try { peer.destroy(); } catch(e){}
+            if (mqttClient && mqttClient.isConnected()) {
+                try { mqttClient.disconnect(); } catch(e){}
+            }
             isOnline = false;
             goToScreen('screen-main-menu');
         }
