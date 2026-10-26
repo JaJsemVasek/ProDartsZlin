@@ -5,185 +5,1491 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pro Darts Zlín</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PeerJS pro online P2P spojení zdarma bez vlastního serveru -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Inter:wght@400;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0f172a; height: 100dvh; margin: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; user-select: none; }
-        .font-digital { font-family: 'Orbitron', sans-serif; }
-        .hidden { display: none !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@500;600;700;800;900&display=swap');
         
-        #menu-screen { background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100dvh; width: 100%; position: absolute; top: 0; left: 0; z-index: 100; }
-        .btn-local { background: linear-gradient(145deg, #16a34a, #15803d); padding: 1.2rem 3rem; border-radius: 1rem; color: white; font-weight: 900; font-size: 1.5rem; text-transform: uppercase; box-shadow: 0 8px 0 #064e3b, 0 15px 25px rgba(0,0,0,0.4); transition: all 0.1s; cursor: pointer; }
-        .btn-local:active { transform: translateY(4px); box-shadow: 0 2px 0 #064e3b; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f17;
+            height: 100dvh;
+            margin: 0;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            color: #e2e8f0;
+        }
 
-        .btn { background: #1e293b; border-radius: 12px; color: white; font-size: 1.8rem; font-weight: 900; display: flex; align-items: center; justify-content: center; height: 65px; box-shadow: 0 4px 0 #000; touch-action: manipulation; }
-        .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #000; background-color: #334155; }
-        .btn-enter { background: #16a34a; box-shadow: 0 4px 0 #064e3b; grid-row: span 2; height: auto; }
-        .btn-util { background: #334155; font-size: 1rem; color: #94a3b8; }
+        .font-num { font-family: 'Chakra Petch', sans-serif; }
+        .hidden { display: none !important; }
 
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 200; align-items: center; justify-content: center; }
-        .overlay-card { background: #1e293b; padding: 2rem; border-radius: 2rem; border: 1px solid #334155; text-align: center; width: 85%; max-width: 350px; }
+        .btn-green {
+            background-color: #10b981;
+            color: #ffffff;
+            font-weight: 800;
+            transition: background 0.1s;
+        }
+        .btn-green:active { background-color: #059669; }
+
+        .btn-blue {
+            background-color: #2563eb;
+            color: #ffffff;
+            font-weight: 800;
+            transition: background 0.1s;
+        }
+        .btn-blue:active { background-color: #1d4ed8; }
+
+        .btn-tab {
+            background: #161f30;
+            border: 1px solid #233148;
+            color: #94a3b8;
+            font-weight: 700;
+            transition: all 0.1s;
+        }
+        .btn-tab.active {
+            background: #10b981;
+            border-color: #10b981;
+            color: #ffffff;
+        }
+
+        .pad-btn {
+            background: #161f30;
+            border: 1px solid #1e293b;
+            color: #ffffff;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .pad-btn:active { background: #26354f; }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(5, 8, 14, 0.92);
+            backdrop-filter: blur(6px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-full w-full">
 
-    <div id="menu-screen">
-        <div class="text-center mb-12">
-            <h1 class="text-emerald-500 font-black text-3xl tracking-tighter uppercase italic opacity-80 leading-none">Pro Darts</h1>
-            <h2 class="text-white font-black text-6xl tracking-widest uppercase">Zlín</h2>
+    <!-- 1. HLAVNÍ MENU -->
+    <div id="screen-main-menu" class="flex flex-col items-center justify-center h-full w-full p-6 z-50">
+        <div class="text-center mb-10">
+            <h1 class="text-emerald-500 font-black text-2xl tracking-tighter uppercase italic leading-none">Pro Darts</h1>
+            <h2 class="text-white font-black text-6xl tracking-wider uppercase mt-1 font-num">ZLÍN</h2>
         </div>
-        <button onclick="showGame()" class="btn-local">Local Game</button>
+        <div class="w-full max-w-xs flex flex-col gap-3">
+            <button onclick="goToScreen('screen-mode-select')" class="btn-green py-4 rounded-xl text-lg uppercase tracking-wider font-extrabold cursor-pointer">
+                Local Game
+            </button>
+            <button onclick="goToScreen('screen-online-lobby')" class="btn-blue py-3.5 rounded-xl text-base uppercase tracking-wider font-extrabold cursor-pointer flex items-center justify-center gap-2">
+                <span>🌐 Online X01</span>
+            </button>
+        </div>
     </div>
 
-    <div id="game-screen" class="hidden flex flex-col h-full w-full absolute inset-0">
-        
-        <div id="finish-overlay" class="overlay"><div class="overlay-card"><h2 class="text-xl font-black text-white mb-6 uppercase tracking-widest">Zavřeno!</h2><div id="dart-buttons" class="grid grid-cols-1 gap-4"></div></div></div>
-        
-        <div id="winner-overlay" class="overlay"><div class="overlay-card"><span class="text-5xl">🏆</span><h2 class="text-3xl font-black text-white mt-4 uppercase italic">Vítěz!</h2><p id="final-stats" class="text-slate-400 mt-2 font-mono text-sm mb-6"></p><div class="flex flex-col gap-3"><button onclick="resetGame(); hideOverlays();" class="bg-emerald-600 py-4 rounded-xl text-white font-black uppercase">Nová hra</button><button onclick="goToMenu()" class="bg-slate-700 py-4 rounded-xl text-white font-black uppercase">Menu</button></div></div></div>
-        
-        <div id="exit-overlay" class="overlay"><div class="overlay-card"><h2 class="text-xl font-black text-white mb-2 uppercase">Opustit hru?</h2><p class="text-slate-400 text-sm mb-8">Aktuální zápas bude ztracen.</p><div class="flex flex-col gap-3"><button onclick="goToMenu()" class="bg-rose-600 py-4 rounded-xl text-white font-black uppercase">Ano, odejít</button><button onclick="hideOverlays()" class="bg-slate-700 py-4 rounded-xl text-white font-black uppercase">Zrušit</button></div></div></div>
+    <!-- ONLINE LOBBY (HOST / JOIN) -->
+    <div id="screen-online-lobby" class="hidden flex flex-col h-full w-full p-4 z-40 max-w-md mx-auto justify-between">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+            <button onclick="goToScreen('screen-main-menu')" class="text-slate-400 font-bold text-xs uppercase hover:text-white">← Zpět</button>
+            <span class="text-xs font-black uppercase tracking-wider text-slate-300 font-num">Online X01</span>
+            <div class="w-8"></div>
+        </div>
 
-        <div id="bust-overlay" class="overlay">
-            <div class="overlay-card">
-                <span class="text-5xl">💥</span>
-                <h2 class="text-3xl font-black text-rose-500 mt-4 uppercase italic">BUST!</h2>
-                <p class="text-slate-400 mt-2 text-sm mb-8">Přehozeno nebo zbytek 1.</p>
-                <div class="flex flex-col gap-3">
-                    <button onclick="submitBust()" class="bg-emerald-600 py-4 rounded-xl text-white font-black uppercase">Enter</button>
-                    <button onclick="hideOverlays()" class="bg-slate-700 py-4 rounded-xl text-white font-black uppercase">Opravit (Zpět)</button>
+        <div class="flex flex-col gap-4 my-auto w-full">
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Tvoje přezdívka</span>
+                <input id="online-my-name" type="text" value="Hráč 1" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-blue-500">
+            </div>
+
+            <!-- Vytvořit -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <span class="text-white font-black text-lg block font-num">Vytvořit hru (Host)</span>
+                <p class="text-slate-500 text-xs mt-0.5 mb-3">Nastavíš pravidla a dáš kód bratrancovi.</p>
+                <button onclick="setupOnlineHostConfig()" class="w-full btn-blue py-3 rounded-lg text-xs uppercase font-extrabold">Vytvořit místnost</button>
+            </div>
+
+            <!-- Připojit se -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+                <span class="text-white font-black text-lg block font-num">Připojit se (Join)</span>
+                <p class="text-slate-500 text-xs mt-0.5 mb-3">Zadej 4místný kód od protihráče.</p>
+                <div class="flex gap-2">
+                    <input id="online-join-code" type="text" maxlength="4" placeholder="KÓD" class="w-24 text-center uppercase tracking-widest font-num bg-slate-950 border border-slate-800 rounded-lg text-lg font-black text-emerald-400 outline-none focus:border-blue-500">
+                    <button onclick="joinOnlineRoom()" class="flex-grow btn-green py-3 rounded-lg text-xs uppercase font-extrabold">Připojit</button>
                 </div>
             </div>
         </div>
+        <div class="h-4"></div>
+    </div>
 
-        <div class="bg-slate-900 pt-10 pb-4 px-6 border-b border-slate-800 shrink-0">
-            <div class="flex justify-between items-start">
+    <!-- ONLINE WAITING SCREEN PRO HOSTA -->
+    <div id="screen-online-waiting" class="hidden flex flex-col h-full w-full p-6 z-40 max-w-md mx-auto items-center justify-center text-center">
+        <span class="text-xs uppercase font-bold text-slate-500 tracking-wider">Kód tvé místnosti</span>
+        <div id="online-display-code" class="text-6xl font-num font-black text-blue-400 my-4 tracking-widest bg-slate-900 px-6 py-3 rounded-2xl border border-slate-800">----</div>
+        <p class="text-slate-400 text-xs max-w-xs mb-6">Pošli tento 4místný kód bratrancovi. Hra začne automaticky po připojení.</p>
+        <button onclick="cancelOnline()" class="bg-slate-800 text-slate-300 py-2.5 px-6 rounded-xl text-xs uppercase font-bold">Zrušit</button>
+    </div>
+
+    <!-- 2. VÝBĚR MÓDU (LOCAL) -->
+    <div id="screen-mode-select" class="hidden flex flex-col h-full w-full p-4 z-40 max-w-md mx-auto justify-between">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+            <button onclick="goToScreen('screen-main-menu')" class="text-slate-400 font-bold text-xs uppercase hover:text-white">← Zpět</button>
+            <span class="text-xs font-black uppercase tracking-wider text-slate-300 font-num">Zvolit hru</span>
+            <div class="w-8"></div>
+        </div>
+
+        <div class="flex flex-col gap-3 my-auto w-full">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                <button onclick="openX01Config()" class="text-left flex-grow">
+                    <span class="text-white font-black text-xl tracking-tight uppercase block font-num">X01</span>
+                    <span class="text-slate-500 text-xs font-semibold">301, 501, 701, 901</span>
+                </button>
+                <button onclick="openInfo('x01')" class="p-2 text-slate-500 hover:text-slate-300 text-lg">ℹ</button>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                <button onclick="openClockConfig()" class="text-left flex-grow">
+                    <span class="text-white font-black text-xl tracking-tight uppercase block font-num">Around The Clock</span>
+                    <span class="text-slate-500 text-xs font-semibold">1–20, Pozpátku, Bez Bullu</span>
+                </button>
+                <button onclick="openInfo('clock')" class="p-2 text-slate-500 hover:text-slate-300 text-lg">ℹ</button>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+                <button onclick="openCricketConfig()" class="text-left flex-grow">
+                    <span class="text-white font-black text-xl tracking-tight uppercase block font-num">Cricket</span>
+                    <span class="text-slate-500 text-xs font-semibold">15–20 + BULL</span>
+                </button>
+                <button onclick="openInfo('cricket')" class="p-2 text-slate-500 hover:text-slate-300 text-lg">ℹ</button>
+            </div>
+        </div>
+        <div class="h-4"></div>
+    </div>
+
+    <!-- 3. X01 KONFIGURACE -->
+    <div id="screen-x01-config" class="hidden flex flex-col h-full w-full p-4 z-40 max-w-md mx-auto overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+            <button onclick="backFromX01Config()" class="text-slate-400 font-bold text-xs uppercase hover:text-white">← Zpět</button>
+            <span class="text-xs font-black uppercase tracking-wider text-slate-300 font-num">Nastavení X01</span>
+            <div class="w-8"></div>
+        </div>
+
+        <div class="flex flex-col gap-4 my-auto py-2">
+            <!-- Hráči (pouze pro lokální hru) -->
+            <div id="x01-players-section" class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">Hráči</span>
+                    <button onclick="addPlayer()" id="btn-add-player-x01" class="text-[11px] text-emerald-400 font-bold hover:underline">+ Přidat hráče</button>
+                </div>
+                <div id="players-list-x01" class="flex flex-col gap-1.5"></div>
+            </div>
+
+            <!-- Body -->
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Hra</span>
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button class="btn-tab rounded-lg py-2 text-sm font-num" data-cfg="points" data-val="301" onclick="selectConfig('points', 301, this)">301</button>
+                    <button class="btn-tab active rounded-lg py-2 text-sm font-num" data-cfg="points" data-val="501" onclick="selectConfig('points', 501, this)">501</button>
+                    <button class="btn-tab rounded-lg py-2 text-sm font-num" data-cfg="points" data-val="701" onclick="selectConfig('points', 701, this)">701</button>
+                    <button class="btn-tab rounded-lg py-2 text-sm font-num" data-cfg="points" data-val="901" onclick="selectConfig('points', 901, this)">901</button>
+                </div>
+            </div>
+
+            <!-- In / Out -->
+            <div class="grid grid-cols-2 gap-2">
                 <div>
-                    <span class="text-[10px] text-emerald-500 font-black tracking-widest uppercase italic">Skóre</span>
-                    <div id="main-score" class="text-7xl font-digital text-white leading-none">501</div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">In</span>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button class="btn-tab active rounded-lg py-2 text-xs" data-cfg="in" data-val="straight" onclick="selectConfig('in', 'straight', this)">Straight</button>
+                        <button class="btn-tab rounded-lg py-2 text-xs" data-cfg="in" data-val="double" onclick="selectConfig('in', 'double', this)">Double</button>
+                    </div>
                 </div>
-                <div class="text-right">
-                    <div id="darts-stat" class="text-slate-500 font-bold text-sm">Šipky: 0</div>
-                    <div id="avg-stat" class="text-emerald-400 font-digital text-xs">Ø 0.0</div>
-                    <button onclick="showExitConfirm()" class="mt-4 text-[9px] border border-slate-700 text-slate-500 px-3 py-1 rounded-full uppercase font-bold">Menu</button>
+                <div>
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Out</span>
+                    <div class="grid grid-cols-3 gap-1">
+                        <button class="btn-tab active rounded-lg py-2 text-xs" data-cfg="out" data-val="double" onclick="selectConfig('out', 'double', this)">Double</button>
+                        <button class="btn-tab rounded-lg py-2 text-xs" data-cfg="out" data-val="master" onclick="selectConfig('out', 'master', this)">Master</button>
+                        <button class="btn-tab rounded-lg py-2 text-xs" data-cfg="out" data-val="straight" onclick="selectConfig('out', 'straight', this)">Straight</button>
+                    </div>
                 </div>
             </div>
-            <div id="checkout-guide" class="mt-4 p-3 bg-slate-800/50 border border-slate-700 rounded-xl text-emerald-400 text-center font-bold text-lg min-h-[52px] flex items-center justify-center italic leading-tight">
-                - - -
+
+            <!-- Formát zápasu -->
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Formát zápasu</span>
+                <div class="grid grid-cols-2 gap-1.5 mb-2.5">
+                    <button class="btn-tab active rounded-lg py-1.5 text-xs" data-cfg="formatType" data-val="first" onclick="selectConfig('formatType', 'first', this)">First To</button>
+                    <button class="btn-tab rounded-lg py-1.5 text-xs" data-cfg="formatType" data-val="best" onclick="selectConfig('formatType', 'best', this)">Best Of</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <span class="text-[10px] text-slate-400 mb-1 block">Legy</span>
+                        <select id="select-legs" onchange="config.targetLegs = parseInt(this.value)" class="w-full bg-slate-950 border border-slate-800 text-white rounded-lg py-2 px-2 text-xs font-bold font-num outline-none">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3" selected>3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="7">7</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-slate-400 mb-1 block">Sety</span>
+                        <select id="select-sets" onchange="config.targetSets = parseInt(this.value)" class="w-full bg-slate-950 border border-slate-800 text-white rounded-lg py-2 px-2 text-xs font-bold font-num outline-none">
+                            <option value="0" selected>Off (jen legy)</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>
+                    </div>
+                </div>
             </div>
+
+            <button id="btn-start-x01" onclick="confirmX01Config()" class="btn-green py-3.5 rounded-xl uppercase tracking-wider font-extrabold text-base mt-1">
+                Start Game
+            </button>
+        </div>
+    </div>
+
+    <!-- 4. HERNÍ OBRAZOVKA X01 -->
+    <div id="game-screen" class="hidden flex flex-col h-full w-full absolute inset-0 z-30 bg-[#070b12]">
+        <div class="flex items-center justify-between px-4 py-2 border-b border-slate-800/80 bg-slate-950 shrink-0">
+            <div class="flex items-center gap-2">
+                <span id="game-badge-rules" class="text-[11px] font-black bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-num">501 DO</span>
+                <span id="game-badge-format" class="text-[11px] font-black text-emerald-400 font-num">FT 3</span>
+                <span id="game-badge-online" class="hidden text-[10px] font-black bg-blue-950 text-blue-400 border border-blue-800 px-1.5 py-0.2 rounded font-num">ONLINE</span>
+            </div>
+            <button onclick="document.getElementById('exit-overlay').style.display = 'flex'" class="text-[11px] text-slate-400 uppercase font-bold hover:text-white">Ukončit</button>
+        </div>
+
+        <div id="players-turn-bar" class="grid grid-cols-2 gap-1 p-2 bg-slate-950 border-b border-slate-800/60 shrink-0"></div>
+
+        <div id="checkout-guide" class="bg-slate-900/90 border-b border-slate-800/80 py-2 text-center font-bold text-sm text-emerald-400 min-h-[36px] flex items-center justify-center font-num tracking-wide shrink-0">
+            - - -
         </div>
 
         <div id="history-container" class="flex-grow overflow-y-auto">
-            <div id="history-body" class="divide-y divide-slate-800/50"></div>
+            <div id="history-body" class="divide-y divide-slate-900"></div>
         </div>
 
-        <div class="bg-slate-900/90 p-4 flex justify-between items-center border-t border-slate-800 shrink-0">
-            <span class="text-orange-500 font-black italic text-sm">HOD:</span>
-            <div id="buffer" class="text-5xl font-digital text-orange-400 min-h-[50px]"></div>
+        <!-- Waiting banner pro soupeře v online módu -->
+        <div id="online-wait-turn" class="hidden bg-blue-950/70 border-t border-blue-900 text-blue-300 text-center py-2 text-xs font-bold font-num uppercase tracking-wider shrink-0">
+            Čekej na hod soupeře...
         </div>
 
-        <div class="grid grid-cols-4 gap-3 p-4 bg-slate-900 shrink-0">
-            <button onclick="press(1)" class="btn">1</button><button onclick="press(2)" class="btn">2</button><button onclick="press(3)" class="btn">3</button><button onclick="backspace()" class="btn btn-util">←</button>
-            <button onclick="press(4)" class="btn">4</button><button onclick="press(5)" class="btn">5</button><button onclick="press(6)" class="btn">6</button><button onclick="undo()" class="btn btn-util text-[10px] uppercase font-black">Zpět</button>
-            <button onclick="press(7)" class="btn">7</button><button onclick="press(8)" class="btn">8</button><button onclick="press(9)" class="btn">9</button><button onclick="submit()" class="btn btn-enter">OK</button>
-            <button onclick="press(0)" class="btn col-span-3">0</button>
+        <div id="numpad-wrapper">
+            <div class="bg-slate-950 px-6 py-2 flex justify-between items-center border-t border-slate-800/80 shrink-0">
+                <span class="text-slate-500 font-bold text-xs uppercase">NÁHOZ:</span>
+                <div id="buffer" class="text-4xl font-num font-bold text-emerald-400 min-h-[40px] flex items-center"></div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-1.5 p-2 bg-slate-950 border-t border-slate-800 shrink-0 h-[220px]">
+                <button onclick="press(1)" class="pad-btn">1</button>
+                <button onclick="press(2)" class="pad-btn">2</button>
+                <button onclick="press(3)" class="pad-btn">3</button>
+                <button onclick="backspace()" class="pad-btn bg-slate-800 text-slate-400 text-base">←</button>
+
+                <button onclick="press(4)" class="pad-btn">4</button>
+                <button onclick="press(5)" class="pad-btn">5</button>
+                <button onclick="press(6)" class="pad-btn">6</button>
+                <button onclick="undo()" class="pad-btn bg-slate-800 text-slate-400 text-xs uppercase font-extrabold">Zpět</button>
+
+                <button onclick="press(7)" class="pad-btn">7</button>
+                <button onclick="press(8)" class="pad-btn">8</button>
+                <button onclick="press(9)" class="pad-btn">9</button>
+                <button onclick="submit()" class="pad-btn btn-green grid-row-span-2 text-2xl font-black" style="grid-row: span 2;">OK</button>
+
+                <button onclick="press(0)" class="pad-btn col-span-3">0</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. CONFIG AROUND THE CLOCK -->
+    <div id="screen-clock-config" class="hidden flex flex-col h-full w-full p-4 z-40 max-w-md mx-auto overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+            <button onclick="goToScreen('screen-mode-select')" class="text-slate-400 font-bold text-xs uppercase hover:text-white">← Zpět</button>
+            <span class="text-xs font-black uppercase tracking-wider text-slate-300 font-num">Around The Clock</span>
+            <div class="w-8"></div>
+        </div>
+
+        <div class="flex flex-col gap-4 my-auto py-3">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">Hráči</span>
+                    <button onclick="addPlayer()" id="btn-add-player-clock" class="text-[11px] text-emerald-400 font-bold hover:underline">+ Přidat hráče</button>
+                </div>
+                <div id="players-list-clock" class="flex flex-col gap-1.5"></div>
+            </div>
+
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Směr</span>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button class="btn-tab active rounded-lg py-2.5 text-xs" data-clock="direction" data-val="forward" onclick="selectClockOption('direction', 'forward', this)">1 ➔ 20 (Klasicky)</button>
+                    <button class="btn-tab rounded-lg py-2.5 text-xs" data-clock="direction" data-val="reverse" onclick="selectClockOption('direction', 'reverse', this)">20 ➔ 1 (Pozpátku)</button>
+                </div>
+            </div>
+
+            <div>
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Zakončení</span>
+                <div class="grid grid-cols-2 gap-1.5">
+                    <button class="btn-tab active rounded-lg py-2.5 text-xs" data-clock="bull" data-val="true" onclick="selectClockOption('bull', true, this)">S Bullem</button>
+                    <button class="btn-tab rounded-lg py-2.5 text-xs" data-clock="bull" data-val="false" onclick="selectClockOption('bull', false, this)">Bez Bullu</button>
+                </div>
+            </div>
+
+            <button onclick="startClockGame()" class="btn-green py-3.5 rounded-xl uppercase tracking-wider font-extrabold text-base mt-2">
+                Start Clock
+            </button>
+        </div>
+    </div>
+
+    <!-- 6. HERNÍ OBRAZOVKA CLOCK -->
+    <div id="screen-clock" class="hidden flex flex-col h-full w-full absolute inset-0 z-30 bg-[#070b12] justify-between">
+        <div class="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-950 shrink-0">
+            <span id="clock-mode-badge" class="text-[11px] font-black text-emerald-400 font-num">CLOCK 1-20</span>
+            <button onclick="document.getElementById('exit-overlay').style.display = 'flex'" class="text-[11px] text-slate-400 uppercase font-bold hover:text-white">Ukončit</button>
+        </div>
+
+        <div id="clock-players-bar" class="grid grid-cols-2 gap-1 p-2 bg-slate-950 border-b border-slate-800 shrink-0"></div>
+
+        <div class="flex flex-col items-center justify-center my-auto px-4">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Aktuální cíl</span>
+            <div id="clock-target" class="text-8xl font-num font-black text-emerald-400 leading-tight my-1">1</div>
+            <div id="clock-active-name" class="text-sm font-bold text-slate-300">Hráč 1</div>
+        </div>
+
+        <div class="px-6 py-3 bg-slate-950 border-t border-slate-800 shrink-0">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[11px] font-bold text-slate-400 uppercase">Kolo (3 šipky)</span>
+                <span id="clock-darts-thrown" class="text-xs font-num text-slate-500">Celkem: 0</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div id="dart-slot-0" class="h-14 rounded-xl border border-slate-800 bg-slate-900 flex items-center justify-center font-num text-lg font-bold text-slate-500">-</div>
+                <div id="dart-slot-1" class="h-14 rounded-xl border border-slate-800 bg-slate-900 flex items-center justify-center font-num text-lg font-bold text-slate-500">-</div>
+                <div id="dart-slot-2" class="h-14 rounded-xl border border-slate-800 bg-slate-900 flex items-center justify-center font-num text-lg font-bold text-slate-500">-</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 p-3 bg-slate-950 border-t border-slate-800 shrink-0">
+            <button onclick="clockUndoDart()" class="pad-btn bg-slate-800 text-slate-400 text-xs uppercase font-extrabold h-14">Zpět</button>
+            <button onclick="clockRecordDart(false)" class="pad-btn bg-rose-950/40 border-rose-900/60 text-rose-400 text-sm font-bold uppercase h-14">Vedle ✕</button>
+            <button onclick="clockRecordDart(true)" class="pad-btn btn-green text-sm font-black uppercase h-14">Trefa 🎯</button>
+        </div>
+    </div>
+
+    <!-- 7. CONFIG CRICKET -->
+    <div id="screen-cricket-config" class="hidden flex flex-col h-full w-full p-4 z-40 max-w-md mx-auto overflow-y-auto">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
+            <button onclick="goToScreen('screen-mode-select')" class="text-slate-400 font-bold text-xs uppercase hover:text-white">← Zpět</button>
+            <span class="text-xs font-black uppercase tracking-wider text-slate-300 font-num">Cricket Nastavení</span>
+            <div class="w-8"></div>
+        </div>
+
+        <div class="flex flex-col gap-4 my-auto py-3">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">Hráči</span>
+                    <button onclick="addPlayer()" id="btn-add-player-cricket" class="text-[11px] text-emerald-400 font-bold hover:underline">+ Přidat hráče</button>
+                </div>
+                <div id="players-list-cricket" class="flex flex-col gap-1.5"></div>
+            </div>
+
+            <button onclick="startCricketGame()" class="btn-green py-3.5 rounded-xl uppercase tracking-wider font-extrabold text-base mt-2">
+                Start Cricket
+            </button>
+        </div>
+    </div>
+
+    <!-- 8. HERNÍ OBRAZOVKA CRICKET -->
+    <div id="screen-cricket" class="hidden flex flex-col h-full w-full absolute inset-0 z-30 bg-[#070b12] justify-between">
+        <div class="flex items-center justify-between px-4 py-2 border-b border-slate-800 bg-slate-950 shrink-0">
+            <span class="text-[11px] font-black text-emerald-400 font-num">CRICKET STANDARD</span>
+            <button onclick="document.getElementById('exit-overlay').style.display = 'flex'" class="text-[11px] text-slate-400 uppercase font-bold hover:text-white">Ukončit</button>
+        </div>
+
+        <div id="cricket-players-bar" class="grid grid-cols-2 gap-1 p-2 bg-slate-950 border-b border-slate-800 shrink-0"></div>
+
+        <div class="flex-grow overflow-y-auto p-2">
+            <table class="w-full text-center border-collapse">
+                <thead>
+                    <tr class="text-[11px] text-slate-500 font-num border-b border-slate-800/80">
+                        <th id="cricket-th-p1" class="py-1">P1</th>
+                        <th class="py-1 text-slate-400">CÍL</th>
+                        <th id="cricket-th-p2" class="py-1">P2</th>
+                    </tr>
+                </thead>
+                <tbody id="cricket-table-body" class="divide-y divide-slate-800/40 font-num text-sm"></tbody>
+            </table>
+        </div>
+
+        <div class="p-2 bg-slate-950 border-t border-slate-800 shrink-0">
+            <div class="flex justify-between items-center mb-1.5 px-1">
+                <span id="cricket-turn-indicator" class="text-xs font-bold text-emerald-400">Hraje: Hráč 1</span>
+                <span id="cricket-round-darts" class="text-xs font-num text-slate-500">Šipky: 0 / 3</span>
+            </div>
+            
+            <div class="grid grid-cols-4 gap-1 mb-1">
+                <button onclick="cricketPress(20)" class="pad-btn h-12 text-base">20</button>
+                <button onclick="cricketPress(19)" class="pad-btn h-12 text-base">19</button>
+                <button onclick="cricketPress(18)" class="pad-btn h-12 text-base">18</button>
+                <button onclick="cricketPress(17)" class="pad-btn h-12 text-base">17</button>
+            </div>
+            <div class="grid grid-cols-4 gap-1 mb-1">
+                <button onclick="cricketPress(16)" class="pad-btn h-12 text-base">16</button>
+                <button onclick="cricketPress(15)" class="pad-btn h-12 text-base">15</button>
+                <button onclick="cricketPress('BULL')" class="pad-btn h-12 text-sm text-amber-400">BULL</button>
+                <button onclick="cricketPress('D-BULL')" class="pad-btn h-12 text-xs text-amber-400 font-black">D-BULL</button>
+            </div>
+
+            <div class="grid grid-cols-4 gap-1">
+                <button id="cricket-mod-s" onclick="setCricketMultiplier(1)" class="btn-tab active rounded-lg h-10 text-xs font-bold">Singl (1x)</button>
+                <button id="cricket-mod-d" onclick="setCricketMultiplier(2)" class="btn-tab rounded-lg h-10 text-xs font-bold">Double (2x)</button>
+                <button id="cricket-mod-t" onclick="setCricketMultiplier(3)" class="btn-tab rounded-lg h-10 text-xs font-bold">Triple (3x)</button>
+                <button onclick="cricketMiss()" class="bg-slate-800 text-slate-400 rounded-lg h-10 text-xs font-bold uppercase">Vedle</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- OVERLAYS -->
+    <div id="info-overlay" class="overlay">
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl w-80 max-w-[90%] text-left">
+            <div class="flex justify-between items-center mb-3">
+                <h3 id="info-title" class="text-white font-black text-base uppercase font-num"></h3>
+                <button onclick="hideOverlays()" class="text-slate-500 hover:text-white text-base">✕</button>
+            </div>
+            <div id="info-content" class="text-slate-300 text-xs leading-relaxed space-y-2 mb-4"></div>
+            <button onclick="hideOverlays()" class="w-full bg-slate-800 py-2.5 rounded-lg text-white font-bold text-xs uppercase">Zavřít</button>
+        </div>
+    </div>
+
+    <div id="finish-overlay" class="overlay">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-80 max-w-[90%] text-center">
+            <h2 class="text-xl font-black text-white mb-1 uppercase font-num">Zavřeno</h2>
+            <p id="finish-player-txt" class="text-emerald-400 text-xs font-bold mb-4 font-num"></p>
+            <div id="dart-buttons" class="grid grid-cols-1 gap-2"></div>
+        </div>
+    </div>
+
+    <div id="match-winner-overlay" class="overlay">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-80 max-w-[90%] text-center">
+            <span class="text-4xl">🏆</span>
+            <h2 class="text-2xl font-black text-white mt-2 uppercase font-num">Vítěz</h2>
+            <p id="match-winner-name" class="text-emerald-400 font-bold text-base mt-1"></p>
+            <div id="match-final-stats" class="bg-slate-950 p-3 rounded-lg my-4 text-xs font-num text-left space-y-1 text-slate-300 max-h-48 overflow-y-auto"></div>
+            <div class="flex flex-col gap-2">
+                <button onclick="restartCurrentGame(); hideOverlays();" class="btn-green py-3 rounded-xl uppercase font-black text-xs">Hrát znovu</button>
+                <button onclick="goToScreen('screen-main-menu'); hideOverlays();" class="bg-slate-800 py-3 rounded-xl text-slate-300 font-bold uppercase text-xs">Zpět do menu</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="bust-overlay" class="overlay">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-80 max-w-[90%] text-center">
+            <h2 class="text-3xl font-black text-rose-500 font-num uppercase">BUST</h2>
+            <div class="flex flex-col gap-2 mt-4">
+                <button onclick="submitBust()" class="bg-rose-600 py-3 rounded-xl text-white font-black uppercase text-xs">0 bodů</button>
+                <button onclick="hideOverlays()" class="bg-slate-800 py-3 rounded-xl text-slate-300 font-bold uppercase text-xs">Opravit</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="exit-overlay" class="overlay">
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-80 max-w-[90%] text-center">
+            <h2 class="text-base font-black text-white mb-2 uppercase">Ukončit hru?</h2>
+            <div class="flex flex-col gap-2 mt-4">
+                <button onclick="exitGameConfirmed(); hideOverlays();" class="bg-rose-600 py-2.5 rounded-xl text-white font-black uppercase text-xs">Odejít</button>
+                <button onclick="hideOverlays()" class="bg-slate-800 py-2.5 rounded-xl text-slate-300 font-bold uppercase text-xs">Zpět</button>
+            </div>
         </div>
     </div>
 
     <script>
-        let score = 501;
-        let history = [];
-        let buffer = "";
-        
-        const checkouts = {
-            170: "T20 T20 BULL", 167: "T20 T19 BULL", 164: "T20 T18 BULL", 161: "T20 T17 BULL", 160: "T20 T20 D20", 158: "T20 T20 D19", 157: "T20 T19 D20", 156: "T20 T20 D18", 155: "T20 T19 D19", 154: "T20 T18 D20", 153: "T20 T19 D18", 152: "T20 T20 D16", 151: "T20 T17 D20", 150: "T20 T18 D18", 149: "T20 T19 D16", 148: "T20 T16 D20", 147: "T20 T17 D18", 146: "T20 T18 D16", 145: "T20 T15 D20", 144: "T20 T20 D12", 143: "T20 T17 D16", 142: "T20 T14 D20", 141: "T20 T15 D18", 140: "T20 T16 D16", 139: "T19 T14 D20", 138: "T20 T18 D12", 137: "T19 S20 D20", 136: "T20 T20 D8", 135: "T20 T13 D18", 134: "T20 T14 D16", 133: "T20 T19 D8", 132: "T20 T16 D12", 131: "T20 T13 D16", 130: "T20 T18 D8", 129: "T19 T16 D12", 128: "T18 T14 D16", 127: "T19 S20 D25", 126: "T19 S19 D25", 125: "T20 S25 D20", 124: "T20 S14 D25", 123: "T19 S16 D25", 122: "T18 S18 D25", 121: "T20 T15 D8", 120: "T20 S20 D20", 119: "T19 S22 D20", 118: "T20 S18 D20", 117: "T20 S17 D20", 116: "T20 S16 D20", 115: "T20 S15 D20", 114: "T20 S14 D20", 113: "T19 S16 D20", 112: "T20 S12 D20", 111: "T19 S14 D20", 110: "T20 S10 D20", 109: "T19 S12 D20", 108: "T20 S16 D16", 107: "T19 S10 D20", 106: "T20 S10 D18", 105: "T19 S16 D16", 104: "T20 S12 D16", 103: "T19 S10 D18", 102: "T20 S10 D16", 101: "T17 S10 D20", 100: "T20 D20", 99: "T19 S10 D16", 98: "T20 D19", 97: "T19 D20", 96: "T20 D18", 95: "T19 D19", 94: "T18 D20", 93: "T19 D18", 92: "T20 D16", 91: "T17 D20", 90: "T18 D18", 89: "T19 D16", 88: "T16 D20", 87: "T17 D18", 86: "T18 D16", 85: "T15 D20", 84: "T20 D12", 83: "T17 D16", 82: "T14 D20", 81: "T19 D12", 80: "T20 D10", 79: "T13 D20", 78: "T18 D12", 77: "T19 D10", 76: "T20 D8", 75: "T17 D12", 74: "T14 D16", 73: "T19 D8", 72: "T12 D18", 71: "T13 D16", 70: "T10 D20", 69: "T19 D6", 68: "T16 D10", 67: "T17 D8", 66: "T10 D18", 65: "T11 D16", 64: "D16 D16", 63: "T13 D12", 62: "T10 D16", 61: "T15 D8", 60: "S20 D20", 59: "S19 D20", 58: "S18 D20", 57: "S17 D20", 56: "S16 D20", 55: "S15 D20", 54: "S14 D20", 53: "S13 D20", 52: "S12 D20", 51: "S11 D20", 50: "S10 D20"
+        let players = [
+            { id: 1, name: "Hráč 1" },
+            { id: 2, name: "Hráč 2" }
+        ];
+
+        let currentGameType = 'x01';
+        let isOnline = false;
+        let isHost = false;
+        let peer = null;
+        let connection = null;
+
+        // ================= X01 =================
+        const config = {
+            points: 501,
+            in: 'straight',
+            out: 'double',
+            formatType: 'first',
+            targetLegs: 3,
+            targetSets: 0
         };
 
-        function showGame() { document.getElementById('menu-screen').style.display = 'none'; document.getElementById('game-screen').classList.remove('hidden'); resetGame(); }
-        function showExitConfirm() { document.getElementById('exit-overlay').style.display = 'flex'; }
-        function goToMenu() { hideOverlays(); document.getElementById('game-screen').classList.add('hidden'); document.getElementById('menu-screen').style.display = 'flex'; }
-        function hideOverlays() { document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none'); }
+        let matchData = {
+            activePlayerIdx: 0,
+            startingPlayerLegIdx: 0,
+            legsNeededToWin: 3,
+            playersState: []
+        };
 
-        function press(n) { if (buffer.length < 3) { buffer += n; if (parseInt(buffer) > 180) buffer = "180"; document.getElementById('buffer').innerText = buffer; } }
-        function backspace() { buffer = buffer.slice(0, -1); document.getElementById('buffer').innerText = buffer; }
+        let buffer = "";
+        let pendingCheckoutValue = 0;
 
-        function submit() {
-            const val = parseInt(buffer) || 0;
-            if (score - val < 0 || score - val === 1) { document.getElementById('bust-overlay').style.display = 'flex'; } 
-            else { 
-                let currentScore = score;
-                score -= val; 
-                if (score === 0) {
-                    if (currentScore > 110) showWinnerMenu(3); 
-                    else showFinishOverlay(currentScore);
-                } else { history.push({ thrown: val, remaining: score }); }
-            }
-            buffer = ""; document.getElementById('buffer').innerText = ""; updateUI();
+        function openX01Config() {
+            isOnline = false;
+            currentGameType = 'x01';
+            document.getElementById('x01-players-section').classList.remove('hidden');
+            document.getElementById('btn-start-x01').innerText = "Start Game";
+            renderPlayersList('players-list-x01', 'btn-add-player-x01');
+            goToScreen('screen-x01-config');
         }
 
-        function submitBust() { history.push({ thrown: 0, remaining: score }); hideOverlays(); updateUI(); }
+        function setupOnlineHostConfig() {
+            isOnline = true;
+            isHost = true;
+            currentGameType = 'x01';
+            document.getElementById('x01-players-section').classList.add('hidden');
+            document.getElementById('btn-start-x01').innerText = "Pokračovat ke kódu";
+            goToScreen('screen-x01-config');
+        }
 
-        function showFinishOverlay(lastScore) {
+        function backFromX01Config() {
+            if (isOnline) goToScreen('screen-online-lobby');
+            else goToScreen('screen-mode-select');
+        }
+
+        function confirmX01Config() {
+            if (isOnline) {
+                initHostOnlineRoom();
+            } else {
+                startX01Game();
+            }
+        }
+
+        function selectConfig(type, val, btn) {
+            config[type] = val;
+            document.querySelectorAll(`[data-cfg="${type}"]`).forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function startX01Game() {
+            matchData.activePlayerIdx = 0;
+            matchData.startingPlayerLegIdx = 0;
+            matchData.legsNeededToWin = config.formatType === 'best' ? Math.ceil(config.targetLegs / 2) : config.targetLegs;
+
+            matchData.playersState = players.map(p => ({
+                id: p.id,
+                name: p.name,
+                score: config.points,
+                legsWon: 0,
+                setsWon: 0,
+                isDoubleInSatisfied: config.in === 'straight',
+                history: [],
+                totalDarts: 0,
+                totalPoints: 0
+            }));
+
+            resetLegForMatch();
+            goToScreen('game-screen');
+        }
+
+        function resetLegForMatch() {
+            matchData.playersState.forEach(p => {
+                p.score = config.points;
+                p.isDoubleInSatisfied = (config.in === 'straight');
+                p.history = [];
+            });
+            matchData.activePlayerIdx = matchData.startingPlayerLegIdx;
+            buffer = "";
+            document.getElementById('buffer').innerText = "";
+            updateX01UI();
+        }
+
+        function press(n) {
+            if (isOnline && !isMyTurnOnline()) return;
+            if (buffer.length < 3) {
+                buffer += n;
+                if (parseInt(buffer, 10) > 180) buffer = "180";
+                document.getElementById('buffer').innerText = buffer;
+            }
+        }
+
+        function backspace() {
+            if (isOnline && !isMyTurnOnline()) return;
+            buffer = buffer.slice(0, -1);
+            document.getElementById('buffer').innerText = buffer;
+        }
+
+        function submit() {
+            if (isOnline && !isMyTurnOnline()) return;
+            if (buffer === "") return;
+            const val = parseInt(buffer, 10);
+            
+            const impossibleScores = [179, 178, 176, 175, 173, 172, 169, 166, 163];
+            if (impossibleScores.includes(val)) {
+                buffer = "";
+                document.getElementById('buffer').innerText = "";
+                return;
+            }
+
+            const p = matchData.playersState[matchData.activePlayerIdx];
+
+            if (!p.isDoubleInSatisfied) {
+                if (val === 0) {
+                    recordThrow(p, 0, 3);
+                    afterTurnExecuted();
+                    return;
+                }
+                let didOpen = confirm(`${p.name}: Byl hod otevřen dablem (Double In)?`);
+                if (!didOpen) {
+                    recordThrow(p, 0, 3);
+                    afterTurnExecuted();
+                    return;
+                }
+                p.isDoubleInSatisfied = true;
+            }
+
+            let rem = p.score - val;
+            let isBust = false;
+
+            if (rem < 0) {
+                isBust = true;
+            } else if (config.out === 'double') {
+                if (rem === 1) isBust = true;
+                if (rem === 0 && val === 1) isBust = true;
+            } else if (config.out === 'master') {
+                if (rem === 1) isBust = true;
+            }
+
+            if (isBust) {
+                document.getElementById('bust-overlay').style.display = 'flex';
+                return;
+            }
+
+            if (rem === 0) {
+                pendingCheckoutValue = val;
+                showFinishOverlay(val, p.name);
+                return;
+            }
+
+            recordThrow(p, val, 3);
+            afterTurnExecuted();
+        }
+
+        function recordThrow(player, val, darts) {
+            player.score -= val;
+            player.history.push({ thrown: val, remaining: player.score, dartsCount: darts });
+            player.totalDarts += darts;
+            player.totalPoints += val;
+            buffer = "";
+            document.getElementById('buffer').innerText = "";
+        }
+
+        function submitBust() {
+            const p = matchData.playersState[matchData.activePlayerIdx];
+            recordThrow(p, 0, 3);
+            hideOverlays();
+            afterTurnExecuted();
+        }
+
+        function afterTurnExecuted() {
+            nextPlayer();
+            if (isOnline) sendOnlineSync();
+        }
+
+        function nextPlayer() {
+            matchData.activePlayerIdx = (matchData.activePlayerIdx + 1) % matchData.playersState.length;
+            updateX01UI();
+        }
+
+        function showFinishOverlay(lastTurnValue, playerName) {
             const overlay = document.getElementById('finish-overlay');
             const btnContainer = document.getElementById('dart-buttons');
+            document.getElementById('finish-player-txt').innerText = playerName;
             btnContainer.innerHTML = '';
-            let startFrom = lastScore > 110 ? 3 : (lastScore > 60 ? 2 : 1);
-            for (let i = startFrom; i <= 3; i++) {
+            
+            let minDarts = lastTurnValue > 110 ? 3 : (lastTurnValue > 50 ? 2 : 1);
+            if (config.out === 'straight' && lastTurnValue <= 60) minDarts = 1;
+
+            for (let i = minDarts; i <= 3; i++) {
                 const b = document.createElement('button');
-                b.className = "bg-emerald-600 py-4 rounded-xl font-black text-white active:scale-95 text-lg";
-                b.innerText = `${i}. ŠIPKOU`;
-                b.onclick = () => showWinnerMenu(i);
+                b.className = "btn-green py-3 rounded-lg font-black text-sm uppercase font-num";
+                b.innerText = `${i}. Šipkou`;
+                b.onclick = () => finalizeLeg(i);
                 btnContainer.appendChild(b);
             }
             overlay.style.display = 'flex';
         }
 
-        function showWinnerMenu(lastDart) {
+        function finalizeLeg(dartsInLastTurn) {
+            const p = matchData.playersState[matchData.activePlayerIdx];
+            recordThrow(p, pendingCheckoutValue, dartsInLastTurn);
+            p.score = 0;
+            p.legsWon++;
             hideOverlays();
-            const totalDarts = (history.length * 3) + lastDart;
-            const avg = history.length > 0 ? (501 / (totalDarts / 3)).toFixed(1) : "0.0";
-            document.getElementById('final-stats').innerText = `Šipky: ${totalDarts} | Průměr: ${avg}`;
-            document.getElementById('winner-overlay').style.display = 'flex';
+
+            if (config.targetSets > 0) {
+                if (p.legsWon >= matchData.legsNeededToWin) {
+                    p.setsWon++;
+                    matchData.playersState.forEach(pl => pl.legsWon = 0);
+                    if (p.setsWon >= config.targetSets) {
+                        endX01Match(p);
+                        if (isOnline) sendOnlineSync();
+                        return;
+                    }
+                }
+            } else {
+                if (p.legsWon >= matchData.legsNeededToWin) {
+                    endX01Match(p);
+                    if (isOnline) sendOnlineSync();
+                    return;
+                }
+            }
+
+            matchData.startingPlayerLegIdx = (matchData.startingPlayerLegIdx + 1) % matchData.playersState.length;
+            resetLegForMatch();
+            if (isOnline) sendOnlineSync();
         }
 
-        function updateUI() {
-            document.getElementById('main-score').innerText = score;
+        function endX01Match(winner) {
+            document.getElementById('match-winner-name').innerText = `${winner.name} vyhrál zápas!`;
+            const statsContainer = document.getElementById('match-final-stats');
+            
+            statsContainer.innerHTML = matchData.playersState.map(pl => {
+                const avg = pl.totalDarts > 0 ? ((pl.totalPoints / pl.totalDarts) * 3).toFixed(2) : "0.00";
+                return `
+                    <div class="flex justify-between border-b border-slate-800 pb-1 mb-1">
+                        <span>${pl.name} (${config.targetSets > 0 ? `S:${pl.setsWon} ` : ''}L:${pl.legsWon})</span>
+                        <span class="text-emerald-400 font-bold">Ø ${avg}</span>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('match-winner-overlay').style.display = 'flex';
+        }
+
+        const checkouts = {
+            170: "T20 T20 BULL", 167: "T20 T19 BULL", 164: "T20 T18 BULL", 161: "T20 T17 BULL", 
+            160: "T20 T20 D20", 158: "T20 T20 D19", 157: "T20 T19 D20", 156: "T20 T20 D18", 
+            155: "T20 T19 D19", 154: "T20 T18 D20", 153: "T20 T19 D18", 152: "T20 T20 D16", 
+            151: "T20 T17 D20", 150: "T20 T18 D18", 149: "T20 T19 D16", 148: "T20 T16 D20", 
+            147: "T20 T17 D18", 146: "T20 T18 D16", 145: "T20 T15 D20", 144: "T20 T20 D12", 
+            143: "T20 T17 D16", 142: "T20 T14 D20", 141: "T20 T15 D18", 140: "T20 T16 D16", 
+            139: "T19 T14 D20", 138: "T20 T18 D12", 137: "T19 S20 D20", 136: "T20 T20 D8", 
+            135: "T20 T13 D18", 134: "T20 T14 D16", 133: "T20 T19 D8",  132: "T20 T16 D12", 
+            131: "T20 T13 D16", 130: "T20 T18 D8",  129: "T19 T16 D12", 128: "T18 T14 D16", 
+            127: "T19 S20 D25", 126: "T19 S19 D25", 125: "T20 S25 D20", 124: "T20 S14 D25", 
+            123: "T19 S16 D25", 122: "T18 S18 D25", 121: "T20 T15 D8",  120: "T20 S20 D20", 
+            119: "T19 S20 D20", 118: "T20 S18 D20", 117: "T20 S17 D20", 116: "T20 S16 D20", 
+            115: "T20 S15 D20", 114: "T20 S14 D20", 113: "T19 S16 D20", 112: "T20 S12 D20", 
+            111: "T19 S14 D20", 110: "T20 S10 D20", 109: "T19 S12 D20", 108: "T20 S16 D16", 
+            107: "T19 S10 D20", 106: "T20 S10 D18", 105: "T19 S16 D16", 104: "T20 S12 D16", 
+            103: "T19 S10 D18", 102: "T20 S10 D16", 101: "T17 S10 D20", 100: "T20 D20", 
+            99: "T19 S10 D16",  98: "T20 D19",     97: "T19 D20",      96: "T20 D18", 
+            95: "T19 D19",      94: "T18 D20",     93: "T19 D18",      92: "T20 D16", 
+            91: "T17 D20",      90: "T18 D18",     89: "T19 D16",      88: "T16 D20", 
+            87: "T17 D18",      86: "T18 D16",     85: "T15 D20",      84: "T20 D12", 
+            83: "T17 D16",      82: "T14 D20",     81: "T19 D12",      80: "T20 D10", 
+            79: "T13 D20",      78: "T18 D12",     77: "T19 D10",      76: "T20 D8", 
+            75: "T17 D12",      74: "T14 D16",     73: "T19 D8",       72: "T12 D18", 
+            71: "T13 D16",      70: "T10 D20",     69: "T19 D6",       68: "T16 D10", 
+            67: "T17 D8",       66: "T10 D18",     65: "T11 D16",      64: "D16 D16", 
+            63: "T13 D12",      62: "T10 D16",     61: "T15 D8",       60: "S20 D20", 
+            59: "S19 D20",      58: "S18 D20",     57: "S17 D20",      56: "S16 D20", 
+            55: "S15 D20",      54: "S14 D20",     53: "S13 D20",      52: "S12 D20", 
+            51: "S11 D20",      50: "BULL",
+            49: "S9 D20",       48: "S16 D16",     47: "S15 D16",      46: "S14 D16",
+            45: "S13 D16",      44: "S12 D16",     43: "S11 D16",      42: "S10 D16",
+            41: "S9 D16",       39: "S7 D16",      37: "S5 D16",       35: "S3 D16",
+            33: "S1 D16",       31: "S15 D8",      29: "S13 D8",       27: "S11 D8",
+            25: "S9 D8",        23: "S7 D8",       21: "S5 D8",        19: "S3 D8",
+            17: "S1 D8",        15: "S7 D4",       13: "S5 D4",        11: "S3 D4",
+            9: "S1 D4",         7: "S3 D2",        5: "S1 D2",         3: "S1 D1"
+        };
+
+        function isMyTurnOnline() {
+            if (!isOnline) return true;
+            const myIdx = isHost ? 0 : 1;
+            return matchData.activePlayerIdx === myIdx;
+        }
+
+        function updateX01UI() {
+            const activePlayer = matchData.playersState[matchData.activePlayerIdx];
+            if (!activePlayer) return;
+
+            const inBadge = config.in === 'double' ? 'DI' : 'SI';
+            const outBadge = config.out === 'double' ? 'DO' : (config.out === 'master' ? 'MO' : 'SO');
+            document.getElementById('game-badge-rules').innerText = `${config.points} ${inBadge}/${outBadge}`;
+
+            const fmtPrefix = config.formatType === 'first' ? 'FT' : 'BO';
+            const setPart = config.targetSets > 0 ? ` [S:${config.targetSets}]` : '';
+            document.getElementById('game-badge-format').innerText = `${fmtPrefix} ${config.targetLegs}L${setPart}`;
+
+            document.getElementById('game-badge-online').classList.toggle('hidden', !isOnline);
+
+            // Numpad vs Čekání na tah
+            if (isOnline) {
+                const myTurn = isMyTurnOnline();
+                document.getElementById('online-wait-turn').classList.toggle('hidden', myTurn);
+                document.getElementById('numpad-wrapper').style.opacity = myTurn ? '1' : '0.4';
+                document.getElementById('numpad-wrapper').style.pointerEvents = myTurn ? 'auto' : 'none';
+            } else {
+                document.getElementById('online-wait-turn').classList.add('hidden');
+                document.getElementById('numpad-wrapper').style.opacity = '1';
+                document.getElementById('numpad-wrapper').style.pointerEvents = 'auto';
+            }
+
+            const turnBar = document.getElementById('players-turn-bar');
+            turnBar.className = `grid grid-cols-${matchData.playersState.length} gap-1 p-2 bg-slate-950 border-b border-slate-800/60 shrink-0`;
+            turnBar.innerHTML = matchData.playersState.map((pl, idx) => {
+                const isActive = idx === matchData.activePlayerIdx;
+                const plDarts = pl.history.reduce((acc, h) => acc + h.dartsCount, 0);
+                const plScored = pl.history.reduce((a, b) => a + b.thrown, 0);
+                const plAvg = plDarts > 0 ? ((plScored / plDarts) * 3).toFixed(1) : "0.0";
+
+                return `
+                    <div class="p-3 rounded-lg border transition-all ${isActive ? 'bg-[#101b2b] border-emerald-500' : 'bg-slate-900 border-slate-800 opacity-60'}">
+                        <div class="flex justify-between items-center text-[11px] font-bold">
+                            <span class="truncate ${isActive ? 'text-emerald-400' : 'text-slate-400'}">${pl.name}</span>
+                            <span class="text-slate-300 font-num">${config.targetSets > 0 ? `S:${pl.setsWon} ` : ''}L:${pl.legsWon}</span>
+                        </div>
+                        <div class="text-3xl font-num font-black text-white mt-1 leading-none">${pl.score}</div>
+                        <div class="flex justify-between items-center mt-2 text-[10px] text-slate-500 font-num font-bold">
+                            <span>Š: ${plDarts}</span>
+                            <span class="${isActive ? 'text-emerald-400' : ''}">Ø ${plAvg}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
             const guide = document.getElementById('checkout-guide');
-            const bogeys = [169, 168, 166, 165, 163, 162, 159];
+            const score = activePlayer.score;
 
-            if (score <= 170) {
+            if (config.out === 'straight') {
+                guide.innerText = score <= 60 ? `Zavři: S${score}` : "- - -";
+                guide.style.color = "#34d399";
+            } else if (score <= 170) {
+                const bogeys = [169, 168, 166, 165, 163, 162, 159];
                 if (bogeys.includes(score)) {
-                    guide.innerText = "NELZE"; guide.style.color = "#ef4444";
+                    guide.innerText = "BOGEY";
+                    guide.style.color = "#f43f5e";
                 } else if (checkouts[score]) {
-                    guide.innerText = checkouts[score]; guide.style.color = "#34d399";
-                } else {
-                    if (score <= 40) {
-                        if (score % 2 === 0) guide.innerText = "D" + (score / 2);
-                        else guide.innerText = "S1 D" + ((score - 1) / 2);
-                    } else { guide.innerText = "DOHAZUJ!"; } // Pro jistotu
+                    guide.innerText = checkouts[score];
                     guide.style.color = "#34d399";
+                } else if (score <= 40 && score % 2 === 0) {
+                    guide.innerText = "D" + (score / 2);
+                    guide.style.color = "#34d399";
+                } else {
+                    guide.innerText = "SETUP";
+                    guide.style.color = "#38bdf8";
                 }
-            } else { guide.innerText = "- - -"; guide.style.color = "#94a3b8"; }
+            } else {
+                guide.innerText = "- - -";
+                guide.style.color = "#475569";
+            }
 
-            document.getElementById('darts-stat').innerText = `Šipky: ${history.length * 3}`;
-            const total = history.reduce((a, b) => a + b.thrown, 0);
-            const avg = history.length > 0 ? (total / (history.length)).toFixed(1) : "0.0";
-            document.getElementById('avg-stat').innerText = `Ø ${avg}`;
             const historyBody = document.getElementById('history-body');
-            historyBody.innerHTML = history.slice().reverse().map((r, i) => `
-                <div class="flex justify-between p-4 bg-slate-900/20 border-b border-slate-800/30">
-                    <span class="text-slate-600 font-bold text-xs">${history.length - i}.</span>
-                    <span class="text-orange-400 font-digital font-bold">-${r.thrown}</span>
-                    <span class="text-emerald-400 font-digital text-xl">${r.remaining}</span>
+            historyBody.innerHTML = activePlayer.history.slice().reverse().map((r, i) => `
+                <div class="flex justify-between items-center px-4 py-2 text-xs font-num bg-slate-950/40">
+                    <span class="text-slate-600 font-bold">${activePlayer.history.length - i}.</span>
+                    <span class="text-slate-400 font-bold">-${r.thrown}</span>
+                    <span class="text-emerald-400 font-bold">${r.remaining}</span>
                 </div>
             `).join('');
         }
 
         function undo() {
-            if (buffer !== "") { buffer = ""; document.getElementById('buffer').innerText = ""; } 
-            else if (history.length > 0) { const lastTurn = history.pop(); score += lastTurn.thrown; buffer = lastTurn.thrown.toString(); document.getElementById('buffer').innerText = buffer; }
-            updateUI();
+            if (isOnline && !isMyTurnOnline()) return;
+            if (buffer !== "") {
+                buffer = "";
+                document.getElementById('buffer').innerText = "";
+                return;
+            }
+
+            const prevPlayerIdx = (matchData.activePlayerIdx - 1 + matchData.playersState.length) % matchData.playersState.length;
+            const prevPlayer = matchData.playersState[prevPlayerIdx];
+
+            if (prevPlayer.history.length > 0) {
+                const lastTurn = prevPlayer.history.pop();
+                prevPlayer.score += lastTurn.thrown;
+                prevPlayer.totalDarts -= lastTurn.dartsCount;
+                prevPlayer.totalPoints -= lastTurn.thrown;
+                matchData.activePlayerIdx = prevPlayerIdx;
+                buffer = lastTurn.thrown > 0 ? lastTurn.thrown.toString() : "";
+                document.getElementById('buffer').innerText = buffer;
+                updateX01UI();
+                if (isOnline) sendOnlineSync();
+            }
         }
 
-        function resetGame() { score = 501; history = []; buffer = ""; updateUI(); }
+        // ================= ONLINE LOGIKA (P2P PEERJS) =================
+        function generateRoomCode() {
+            return Math.floor(1000 + Math.random() * 9000).toString();
+        }
+
+        function initHostOnlineRoom() {
+            const hostName = document.getElementById('online-my-name').value.trim() || "Host";
+            const code = generateRoomCode();
+            document.getElementById('online-display-code').innerText = code;
+            goToScreen('screen-online-waiting');
+
+            if (peer) peer.destroy();
+            peer = new Peer('prodz-' + code);
+
+            peer.on('open', () => {
+                console.log('Online místnost vytvořena s kódem:', code);
+            });
+
+            peer.on('connection', (conn) => {
+                connection = conn;
+                setupConnectionListeners();
+
+                // Pošleme hostovu konfiguraci a jméno
+                connection.on('open', () => {
+                    connection.send({
+                        type: 'INIT_CONFIG',
+                        hostName: hostName,
+                        config: config
+                    });
+                });
+            });
+
+            peer.on('error', (err) => {
+                alert('Chyba online připojení: ' + err.type);
+                goToScreen('screen-online-lobby');
+            });
+        }
+
+        function joinOnlineRoom() {
+            const guestName = document.getElementById('online-my-name').value.trim() || "Bratranec";
+            const code = document.getElementById('online-join-code').value.trim();
+
+            if (code.length !== 4) {
+                alert('Zadej platný 4místný kód!');
+                return;
+            }
+
+            isOnline = true;
+            isHost = false;
+            currentGameType = 'x01';
+
+            if (peer) peer.destroy();
+            peer = new Peer();
+
+            peer.on('open', () => {
+                connection = peer.connect('prodz-' + code);
+                setupConnectionListeners();
+
+                connection.on('open', () => {
+                    connection.send({
+                        type: 'JOIN_HELLO',
+                        guestName: guestName
+                    });
+                });
+            });
+
+            peer.on('error', (err) => {
+                alert('Nelze se připojit k místnosti s tímto kódem.');
+                goToScreen('screen-online-lobby');
+            });
+        }
+
+        function setupConnectionListeners() {
+            connection.on('data', (data) => {
+                if (data.type === 'JOIN_HELLO' && isHost) {
+                    // Host obdrží jméno hosta a spustí hru pro oba
+                    const hostName = document.getElementById('online-my-name').value.trim() || "Host";
+                    players = [
+                        { id: 1, name: hostName },
+                        { id: 2, name: data.guestName }
+                    ];
+                    startX01Game();
+                    connection.send({
+                        type: 'START_GAME',
+                        players: players,
+                        config: config,
+                        matchData: matchData
+                    });
+                } else if (data.type === 'START_GAME' && !isHost) {
+                    // Host přijme start
+                    players = data.players;
+                    Object.assign(config, data.config);
+                    matchData = data.matchData;
+                    goToScreen('game-screen');
+                    updateX01UI();
+                } else if (data.type === 'SYNC') {
+                    // Synchronizace stavu po hodu
+                    matchData = data.matchData;
+                    updateX01UI();
+                }
+            });
+
+            connection.on('close', () => {
+                alert('Protihráč se odpojil.');
+                exitGameConfirmed();
+            });
+        }
+
+        function sendOnlineSync() {
+            if (connection && connection.open) {
+                connection.send({
+                    type: 'SYNC',
+                    matchData: matchData
+                });
+            }
+        }
+
+        function cancelOnline() {
+            if (peer) peer.destroy();
+            goToScreen('screen-online-lobby');
+        }
+
+        function exitGameConfirmed() {
+            if (peer) peer.destroy();
+            isOnline = false;
+            goToScreen('screen-main-menu');
+        }
+
+        // ================= AROUND THE CLOCK =================
+        const clockConfig = {
+            direction: 'forward',
+            withBull: true
+        };
+
+        let clockState = {
+            activePlayerIdx: 0,
+            targetsSequence: [],
+            players: [],
+            currentTurnDarts: []
+        };
+
+        function openClockConfig() {
+            currentGameType = 'clock';
+            renderPlayersList('players-list-clock', 'btn-add-player-clock');
+            goToScreen('screen-clock-config');
+        }
+
+        function selectClockOption(type, val, btn) {
+            clockConfig[type] = val;
+            document.querySelectorAll(`[data-clock="${type}"]`).forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function startClockGame() {
+            let seq = [];
+            if (clockConfig.direction === 'forward') {
+                for (let i = 1; i <= 20; i++) seq.push(i);
+            } else {
+                for (let i = 20; i >= 1; i--) seq.push(i);
+            }
+            if (clockConfig.withBull) seq.push('BULL');
+
+            clockState.targetsSequence = seq;
+            clockState.activePlayerIdx = 0;
+            clockState.currentTurnDarts = [];
+
+            clockState.players = players.map(p => ({
+                id: p.id,
+                name: p.name,
+                targetIndex: 0,
+                dartsThrown: 0,
+                hits: 0,
+                turnsHistory: []
+            }));
+
+            document.getElementById('clock-mode-badge').innerText = `CLOCK ${clockConfig.direction === 'forward' ? '1-20' : '20-1'} ${clockConfig.withBull ? '+ BULL' : ''}`;
+            updateClockUI();
+            goToScreen('screen-clock');
+        }
+
+        function clockRecordDart(isHit) {
+            const p = clockState.players[clockState.activePlayerIdx];
+            const currentTarget = clockState.targetsSequence[p.targetIndex];
+
+            p.dartsThrown++;
+            if (isHit) {
+                p.hits++;
+                p.targetIndex++;
+            }
+
+            clockState.currentTurnDarts.push({
+                target: currentTarget,
+                hit: isHit
+            });
+
+            if (p.targetIndex >= clockState.targetsSequence.length) {
+                endClockMatch(p);
+                return;
+            }
+
+            if (clockState.currentTurnDarts.length === 3) {
+                p.turnsHistory.push([...clockState.currentTurnDarts]);
+                clockState.currentTurnDarts = [];
+                clockState.activePlayerIdx = (clockState.activePlayerIdx + 1) % clockState.players.length;
+            }
+
+            updateClockUI();
+        }
+
+        function clockUndoDart() {
+            const p = clockState.players[clockState.activePlayerIdx];
+            if (clockState.currentTurnDarts.length > 0) {
+                const lastDart = clockState.currentTurnDarts.pop();
+                p.dartsThrown--;
+                if (lastDart.hit) p.targetIndex--;
+                updateClockUI();
+                return;
+            }
+
+            const prevPlayerIdx = (clockState.activePlayerIdx - 1 + clockState.players.length) % clockState.players.length;
+            const prevPlayer = clockState.players[prevPlayerIdx];
+
+            if (prevPlayer.turnsHistory.length > 0) {
+                const lastTurn = prevPlayer.turnsHistory.pop();
+                clockState.activePlayerIdx = prevPlayerIdx;
+                clockState.currentTurnDarts = lastTurn;
+                const lastDart = clockState.currentTurnDarts.pop();
+                prevPlayer.dartsThrown--;
+                if (lastDart.hit) prevPlayer.targetIndex--;
+                updateClockUI();
+            }
+        }
+
+        function updateClockUI() {
+            const p = clockState.players[clockState.activePlayerIdx];
+            const currentTarget = clockState.targetsSequence[p.targetIndex] || 'DONE';
+
+            document.getElementById('clock-target').innerText = currentTarget;
+            document.getElementById('clock-active-name').innerText = `${p.name} (na tahu)`;
+            document.getElementById('clock-darts-thrown').innerText = `Šipky: ${p.dartsThrown}`;
+
+            const bar = document.getElementById('clock-players-bar');
+            bar.className = `grid grid-cols-${clockState.players.length} gap-1 p-2 bg-slate-950 border-b border-slate-800 shrink-0`;
+            bar.innerHTML = clockState.players.map((pl, idx) => {
+                const isActive = idx === clockState.activePlayerIdx;
+                const tgt = clockState.targetsSequence[pl.targetIndex] || 'HOTOVO';
+                return `
+                    <div class="p-2.5 rounded-lg border transition-all ${isActive ? 'bg-[#101b2b] border-emerald-500' : 'bg-slate-900 border-slate-800 opacity-60'}">
+                        <div class="flex justify-between items-center text-[11px] font-bold">
+                            <span class="truncate ${isActive ? 'text-emerald-400' : 'text-slate-400'}">${pl.name}</span>
+                            <span class="text-slate-500 font-num">Š: ${pl.dartsThrown}</span>
+                        </div>
+                        <div class="text-2xl font-num font-black text-white mt-0.5 leading-none">Cíl: <span class="text-emerald-400">${tgt}</span></div>
+                    </div>
+                `;
+            }).join('');
+
+            for (let i = 0; i < 3; i++) {
+                const slot = document.getElementById(`dart-slot-${i}`);
+                const dart = clockState.currentTurnDarts[i];
+                if (dart) {
+                    slot.innerText = dart.hit ? `✓ (${dart.target})` : `✕ (${dart.target})`;
+                    slot.className = dart.hit 
+                        ? "h-14 rounded-xl border border-emerald-500/80 bg-emerald-950/40 flex items-center justify-center font-num text-sm font-black text-emerald-400"
+                        : "h-14 rounded-xl border border-rose-900/60 bg-rose-950/30 flex items-center justify-center font-num text-sm font-bold text-rose-400";
+                } else {
+                    slot.innerText = `${i + 1}.`;
+                    slot.className = "h-14 rounded-xl border border-slate-800 bg-slate-900 flex items-center justify-center font-num text-sm font-bold text-slate-600";
+                }
+            }
+        }
+
+        function endClockMatch(winner) {
+            document.getElementById('match-winner-name').innerText = `${winner.name} vyhrál hodiny!`;
+            const stats = document.getElementById('match-final-stats');
+            stats.innerHTML = clockState.players.map(pl => `
+                <div class="flex justify-between border-b border-slate-800 pb-1 mb-1">
+                    <span>${pl.name}</span>
+                    <span class="text-emerald-400 font-bold">${pl.dartsThrown} šipek</span>
+                </div>
+            `).join('');
+            document.getElementById('match-winner-overlay').style.display = 'flex';
+        }
+
+        // ================= CRICKET =================
+        const cricketTargets = [20, 19, 18, 17, 16, 15, 'BULL'];
+        let cricketMultiplier = 1;
+
+        let cricketState = {
+            activePlayerIdx: 0,
+            players: [],
+            currentDartsInTurn: 0
+        };
+
+        function openCricketConfig() {
+            currentGameType = 'cricket';
+            renderPlayersList('players-list-cricket', 'btn-add-player-cricket');
+            goToScreen('screen-cricket-config');
+        }
+
+        function setCricketMultiplier(m) {
+            cricketMultiplier = m;
+            document.getElementById('cricket-mod-s').classList.toggle('active', m === 1);
+            document.getElementById('cricket-mod-d').classList.toggle('active', m === 2);
+            document.getElementById('cricket-mod-t').classList.toggle('active', m === 3);
+        }
+
+        function startCricketGame() {
+            cricketMultiplier = 1;
+            setCricketMultiplier(1);
+            cricketState.activePlayerIdx = 0;
+            cricketState.currentDartsInTurn = 0;
+
+            cricketState.players = players.map(p => ({
+                id: p.id,
+                name: p.name,
+                points: 0,
+                dartsThrown: 0,
+                hits: {
+                    20: 0, 19: 0, 18: 0, 17: 0, 16: 0, 15: 0, 'BULL': 0
+                }
+            }));
+
+            updateCricketUI();
+            goToScreen('screen-cricket');
+        }
+
+        function cricketPress(target) {
+            const p = cricketState.players[cricketState.activePlayerIdx];
+            let hitsToAdd = cricketMultiplier;
+
+            if (target === 'D-BULL') {
+                target = 'BULL';
+                hitsToAdd = 2;
+            }
+
+            p.dartsThrown++;
+            cricketState.currentDartsInTurn++;
+
+            const currentHits = p.hits[target];
+            const neededToClose = Math.max(0, 3 - currentHits);
+
+            if (hitsToAdd <= neededToClose) {
+                p.hits[target] += hitsToAdd;
+            } else {
+                p.hits[target] = 3;
+                const scoringHits = hitsToAdd - neededToClose;
+
+                const isAllOpponentsClosed = cricketState.players
+                    .filter(pl => pl.id !== p.id)
+                    .every(pl => pl.hits[target] >= 3);
+
+                if (!isAllOpponentsClosed) {
+                    const value = target === 'BULL' ? 25 : target;
+                    p.points += scoringHits * value;
+                }
+            }
+
+            setCricketMultiplier(1);
+
+            if (checkCricketWinner(p)) {
+                endCricketMatch(p);
+                return;
+            }
+
+            if (cricketState.currentDartsInTurn >= 3) {
+                cricketState.currentDartsInTurn = 0;
+                cricketState.activePlayerIdx = (cricketState.activePlayerIdx + 1) % cricketState.players.length;
+            }
+
+            updateCricketUI();
+        }
+
+        function cricketMiss() {
+            const p = cricketState.players[cricketState.activePlayerIdx];
+            p.dartsThrown++;
+            cricketState.currentDartsInTurn++;
+            setCricketMultiplier(1);
+
+            if (cricketState.currentDartsInTurn >= 3) {
+                cricketState.currentDartsInTurn = 0;
+                cricketState.activePlayerIdx = (cricketState.activePlayerIdx + 1) % cricketState.players.length;
+            }
+
+            updateCricketUI();
+        }
+
+        function checkCricketWinner(player) {
+            const allClosed = cricketTargets.every(t => player.hits[t] >= 3);
+            if (!allClosed) return false;
+            return cricketState.players.every(pl => player.points >= pl.points);
+        }
+
+        function getCricketSymbol(count) {
+            if (count === 0) return '<span class="text-slate-700">-</span>';
+            if (count === 1) return '<span class="text-slate-400 font-bold">/</span>';
+            if (count === 2) return '<span class="text-emerald-500 font-bold">✕</span>';
+            return '<span class="text-emerald-400 font-black">⨂</span>';
+        }
+
+        function updateCricketUI() {
+            const activePlayer = cricketState.players[cricketState.activePlayerIdx];
+            document.getElementById('cricket-turn-indicator').innerText = `Hází: ${activePlayer.name}`;
+            document.getElementById('cricket-round-darts').innerText = `Šipky: ${cricketState.currentDartsInTurn} / 3`;
+
+            const bar = document.getElementById('cricket-players-bar');
+            bar.className = `grid grid-cols-${cricketState.players.length} gap-1 p-2 bg-slate-950 border-b border-slate-800 shrink-0`;
+            bar.innerHTML = cricketState.players.map((pl, idx) => {
+                const isActive = idx === cricketState.activePlayerIdx;
+                return `
+                    <div class="p-2.5 rounded-lg border transition-all ${isActive ? 'bg-[#101b2b] border-emerald-500' : 'bg-slate-900 border-slate-800 opacity-60'}">
+                        <div class="flex justify-between items-center text-[11px] font-bold">
+                            <span class="truncate ${isActive ? 'text-emerald-400' : 'text-slate-400'}">${pl.name}</span>
+                            <span class="text-slate-500 font-num">Š: ${pl.dartsThrown}</span>
+                        </div>
+                        <div class="text-3xl font-num font-black text-white mt-1 leading-none">${pl.points} <span class="text-xs text-slate-500 font-normal">pts</span></div>
+                    </div>
+                `;
+            }).join('');
+
+            const p1 = cricketState.players[0];
+            const p2 = cricketState.players[1] || { hits: {}, points: 0, name: '-' };
+
+            document.getElementById('cricket-th-p1').innerText = p1.name;
+            document.getElementById('cricket-th-p2').innerText = p2.name;
+
+            const tbody = document.getElementById('cricket-table-body');
+            tbody.innerHTML = cricketTargets.map(target => {
+                const s1 = getCricketSymbol(p1.hits[target] || 0);
+                const s2 = cricketState.players.length > 1 ? getCricketSymbol(p2.hits[target] || 0) : '-';
+                return `
+                    <tr class="h-10 hover:bg-slate-900/40">
+                        <td class="text-lg">${s1}</td>
+                        <td class="font-bold text-slate-300 text-sm bg-slate-900/60">${target}</td>
+                        <td class="text-lg">${s2}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function endCricketMatch(winner) {
+            document.getElementById('match-winner-name').innerText = `${winner.name} vyhrál Cricket!`;
+            const stats = document.getElementById('match-final-stats');
+            stats.innerHTML = cricketState.players.map(pl => `
+                <div class="flex justify-between border-b border-slate-800 pb-1 mb-1">
+                    <span>${pl.name}</span>
+                    <span class="text-emerald-400 font-bold">${pl.points} pts (${pl.dartsThrown} šipek)</span>
+                </div>
+            `).join('');
+            document.getElementById('match-winner-overlay').style.display = 'flex';
+        }
+
+        // ================= HRÁČI & NAVIGACE =================
+        function renderPlayersList(containerId, btnAddId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = players.map((p, idx) => `
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500 font-num w-3">${idx + 1}</span>
+                    <input type="text" value="${p.name}" onchange="renamePlayer(${p.id}, this.value)" 
+                           class="flex-grow bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white outline-none focus:border-emerald-500">
+                    ${players.length > 1 ? `<button onclick="removePlayer(${p.id})" class="text-slate-500 hover:text-rose-400 text-xs px-1">✕</button>` : ''}
+                </div>
+            `).join('');
+            const addBtn = document.getElementById(btnAddId);
+            if (addBtn) addBtn.style.display = players.length >= 4 ? 'none' : 'block';
+        }
+
+        function addPlayer() {
+            if (players.length >= 4) return;
+            players.push({ id: Date.now(), name: `Hráč ${players.length + 1}` });
+            renderPlayersList('players-list-x01', 'btn-add-player-x01');
+            renderPlayersList('players-list-clock', 'btn-add-player-clock');
+            renderPlayersList('players-list-cricket', 'btn-add-player-cricket');
+        }
+
+        function removePlayer(id) {
+            if (players.length <= 1) return;
+            players = players.filter(p => p.id !== id);
+            renderPlayersList('players-list-x01', 'btn-add-player-x01');
+            renderPlayersList('players-list-clock', 'btn-add-player-clock');
+            renderPlayersList('players-list-cricket', 'btn-add-player-cricket');
+        }
+
+        function renamePlayer(id, name) {
+            const p = players.find(x => x.id === id);
+            if (p) p.name = name.trim() || `Hráč ${p.id}`;
+        }
+
+        function restartCurrentGame() {
+            if (currentGameType === 'x01') startX01Game();
+            else if (currentGameType === 'clock') startClockGame();
+            else if (currentGameType === 'cricket') startCricketGame();
+        }
+
+        const gameRules = {
+            x01: {
+                title: "X01",
+                text: "Odečti skóre přesně na 0. Při Double Out musíš skončit dablem nebo červeným středem (Bull 50). Při Straight Out stačí jakýkoliv segment."
+            },
+            clock: {
+                title: "Around The Clock",
+                text: "Trénink šipek po celém terči pro 1–4 hráče. Házej po 3 šipkách v kole, postupně na určená čísla (klasicky 1–20 nebo pozpátku 20–1, volitelně s Bullem)."
+            },
+            cricket: {
+                title: "Cricket",
+                text: "Zavírej čísla 15 až 20 a BULL (každé 3x). Jakmile máš číslo uzavřené a soupeř ještě ne, další zásahy ti přičítají body. Vyhrává ten, kdo má vše zavřeno a zároveň nejvíce bodů."
+            }
+        };
+
+        function openInfo(type) {
+            const data = gameRules[type];
+            if (!data) return;
+            document.getElementById('info-title').innerText = data.title;
+            document.getElementById('info-content').innerText = data.text;
+            document.getElementById('info-overlay').style.display = 'flex';
+        }
+
+        function hideOverlays() {
+            document.querySelectorAll('.overlay').forEach(el => el.style.display = 'none');
+        }
+
+        function goToScreen(screenId) {
+            const screens = [
+                'screen-main-menu',
+                'screen-mode-select',
+                'screen-online-lobby',
+                'screen-online-waiting',
+                'screen-x01-config',
+                'game-screen',
+                'screen-clock-config',
+                'screen-clock',
+                'screen-cricket-config',
+                'screen-cricket'
+            ];
+            screens.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            const target = document.getElementById(screenId);
+            if (target) target.classList.remove('hidden');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen.classList.contains('hidden')) return;
+
+            if (e.key >= '0' && e.key <= '9') {
+                press(parseInt(e.key, 10));
+            } else if (e.key === 'Backspace') {
+                backspace();
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                submit();
+            } else if (e.key === 'Escape' || e.key === 'u' || e.key === 'U') {
+                undo();
+            }
+        });
     </script>
 </body>
 </html>
