@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pro Darts Zlín</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Spolehlivý WebSocket MQTT klient -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@500;600;700;800;900&display=swap');
@@ -72,8 +71,8 @@
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(5, 8, 14, 0.92);
-            backdrop-filter: blur(6px);
+            background: rgba(5, 8, 14, 0.94);
+            backdrop-filter: blur(8px);
             z-index: 200;
             align-items: center;
             justify-content: center;
@@ -185,7 +184,6 @@
         </div>
 
         <div class="flex flex-col gap-4 my-auto py-2">
-            <!-- Hráči (pouze pro lokální hru) -->
             <div id="x01-players-section" class="bg-slate-900 border border-slate-800 rounded-xl p-3">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">Hráči</span>
@@ -194,7 +192,6 @@
                 <div id="players-list-x01" class="flex flex-col gap-1.5"></div>
             </div>
 
-            <!-- Body -->
             <div>
                 <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Hra</span>
                 <div class="grid grid-cols-4 gap-1.5">
@@ -205,7 +202,6 @@
                 </div>
             </div>
 
-            <!-- In / Out -->
             <div class="grid grid-cols-2 gap-2">
                 <div>
                     <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">In</span>
@@ -224,7 +220,6 @@
                 </div>
             </div>
 
-            <!-- Formát zápasu -->
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-3">
                 <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Formát zápasu</span>
                 <div class="grid grid-cols-2 gap-1.5 mb-2.5">
@@ -272,12 +267,14 @@
             <button onclick="document.getElementById('exit-overlay').style.display = 'flex'" class="text-[11px] text-slate-400 uppercase font-bold hover:text-white">Ukončit</button>
         </div>
 
-        <div id="players-turn-bar" class="grid grid-cols-2 gap-1 p-2 bg-slate-950 border-b border-slate-800/60 shrink-0"></div>
+        <!-- Karty hráčů s jasným označením tahu a posledního hodu -->
+        <div id="players-turn-bar" class="grid grid-cols-2 gap-1.5 p-2 bg-slate-950 border-b border-slate-800/60 shrink-0"></div>
 
         <div id="checkout-guide" class="bg-slate-900/90 border-b border-slate-800/80 py-2 text-center font-bold text-sm text-emerald-400 min-h-[36px] flex items-center justify-center font-num tracking-wide shrink-0">
             - - -
         </div>
 
+        <!-- Historie celého legu -->
         <div id="history-container" class="flex-grow overflow-y-auto">
             <div id="history-body" class="divide-y divide-slate-900"></div>
         </div>
@@ -479,16 +476,34 @@
         </div>
     </div>
 
+    <!-- PODROBNÝ PŘEHLED STATISTIK NA KONCI ZÁPASU -->
     <div id="match-winner-overlay" class="overlay">
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl w-80 max-w-[90%] text-center">
-            <span class="text-4xl">🏆</span>
-            <h2 class="text-2xl font-black text-white mt-2 uppercase font-num">Vítěz</h2>
-            <p id="match-winner-name" class="text-emerald-400 font-bold text-base mt-1"></p>
-            <div id="match-final-stats" class="bg-slate-950 p-3 rounded-lg my-4 text-xs font-num text-left space-y-1 text-slate-300 max-h-48 overflow-y-auto"></div>
-            <div class="flex flex-col gap-2">
-                <button onclick="restartCurrentGame(); hideOverlays();" class="btn-green py-3 rounded-xl uppercase font-black text-xs">Hrát znovu</button>
-                <button onclick="goToScreen('screen-main-menu'); hideOverlays();" class="bg-slate-800 py-3 rounded-xl text-slate-300 font-bold uppercase text-xs">Zpět do menu</button>
+        <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl w-[92%] max-w-md text-center max-h-[90vh] flex flex-col justify-between">
+            <div>
+                <span class="text-3xl">🏆</span>
+                <h2 class="text-xl font-black text-white mt-1 uppercase font-num">Konec zápasu</h2>
+                <p id="match-winner-name" class="text-emerald-400 font-bold text-base"></p>
             </div>
+
+            <!-- Tabulka kompletních statistik -->
+            <div id="match-final-stats" class="my-3 overflow-y-auto max-h-[55vh] text-left divide-y divide-slate-800">
+                <!-- Vkládáno dynamicky -->
+            </div>
+
+            <div class="flex flex-col gap-2 shrink-0 pt-2 border-t border-slate-800/80">
+                <button onclick="restartCurrentGame(); hideOverlays();" class="btn-green py-3 rounded-xl uppercase font-black text-xs">Hrát znovu</button>
+                <button onclick="exitGameConfirmed(); hideOverlays();" class="bg-slate-800 py-3 rounded-xl text-slate-300 font-bold uppercase text-xs">Zpět do menu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ODPOJENÍ SOUPEŘE OVERLAY -->
+    <div id="disconnect-overlay" class="overlay">
+        <div class="bg-slate-900 border border-rose-900/60 p-6 rounded-2xl w-80 max-w-[90%] text-center">
+            <span class="text-4xl">⚠️</span>
+            <h2 class="text-lg font-black text-white mt-2 mb-1 uppercase font-num">Soupeř se odpojil</h2>
+            <p class="text-slate-400 text-xs mb-5">Druhý hráč opustil hru nebo ztratil spojení.</p>
+            <button onclick="exitGameConfirmed(); hideOverlays();" class="w-full bg-slate-800 py-3 rounded-xl text-white font-bold uppercase text-xs">Zpět do menu</button>
         </div>
     </div>
 
@@ -539,7 +554,8 @@
             activePlayerIdx: 0,
             startingPlayerLegIdx: 0,
             legsNeededToWin: 3,
-            playersState: []
+            playersState: [],
+            legHistoryLog: [] // Log všech hodů v aktuálním legu
         };
 
         let buffer = "";
@@ -569,11 +585,8 @@
         }
 
         function confirmX01Config() {
-            if (isOnline) {
-                initHostOnlineRoom();
-            } else {
-                startX01Game();
-            }
+            if (isOnline) initHostOnlineRoom();
+            else startX01Game();
         }
 
         function selectConfig(type, val, btn) {
@@ -591,12 +604,21 @@
                 id: p.id,
                 name: p.name,
                 score: config.points,
+                lastScore: 0,
                 legsWon: 0,
                 setsWon: 0,
                 isDoubleInSatisfied: config.in === 'straight',
                 history: [],
                 totalDarts: 0,
-                totalPoints: 0
+                totalPoints: 0,
+                // Detailní statistiky
+                highestScore: 0,
+                highestCheckout: 0,
+                bestLegDarts: null,
+                worstLegDarts: null,
+                legsPlayedDarts: [],
+                first9Points: 0,
+                first9Darts: 0
             }));
 
             resetLegForMatch();
@@ -606,9 +628,11 @@
         function resetLegForMatch() {
             matchData.playersState.forEach(p => {
                 p.score = config.points;
+                p.lastScore = 0;
                 p.isDoubleInSatisfied = (config.in === 'straight');
                 p.history = [];
             });
+            matchData.legHistoryLog = [];
             matchData.activePlayerIdx = matchData.startingPlayerLegIdx;
             buffer = "";
             document.getElementById('buffer').innerText = "";
@@ -688,9 +712,30 @@
 
         function recordThrow(player, val, darts) {
             player.score -= val;
+            player.lastScore = val;
             player.history.push({ thrown: val, remaining: player.score, dartsCount: darts });
             player.totalDarts += darts;
             player.totalPoints += val;
+
+            if (val > player.highestScore) {
+                player.highestScore = val;
+            }
+
+            // Evidence pro First 9 Darts v lezích
+            const dartsSoFarInLeg = player.history.reduce((a, b) => a + b.dartsCount, 0);
+            if (dartsSoFarInLeg <= 9) {
+                player.first9Points += val;
+                player.first9Darts += darts;
+            }
+
+            // Záznam do společného logu legu
+            matchData.legHistoryLog.unshift({
+                playerName: player.name,
+                playerIdx: matchData.activePlayerIdx,
+                thrown: val,
+                remaining: player.score
+            });
+
             buffer = "";
             document.getElementById('buffer').innerText = "";
         }
@@ -736,6 +781,21 @@
             recordThrow(p, pendingCheckoutValue, dartsInLastTurn);
             p.score = 0;
             p.legsWon++;
+
+            // Highest checkout
+            if (pendingCheckoutValue > p.highestCheckout) {
+                p.highestCheckout = pendingCheckoutValue;
+            }
+
+            // Best / Worst leg
+            const legDartsCount = p.history.reduce((acc, h) => acc + h.dartsCount, 0);
+            if (p.bestLegDarts === null || legDartsCount < p.bestLegDarts) {
+                p.bestLegDarts = legDartsCount;
+            }
+            if (p.worstLegDarts === null || legDartsCount > p.worstLegDarts) {
+                p.worstLegDarts = legDartsCount;
+            }
+
             hideOverlays();
 
             if (config.targetSets > 0) {
@@ -767,10 +827,25 @@
             
             statsContainer.innerHTML = matchData.playersState.map(pl => {
                 const avg = pl.totalDarts > 0 ? ((pl.totalPoints / pl.totalDarts) * 3).toFixed(2) : "0.00";
+                const f9Avg = pl.first9Darts > 0 ? ((pl.first9Points / pl.first9Darts) * 3).toFixed(2) : "-";
+                const bestL = pl.bestLegDarts !== null ? `${pl.bestLegDarts} šipek` : "-";
+                const worstL = pl.worstLegDarts !== null ? `${pl.worstLegDarts} šipek` : "-";
+                const highCO = pl.highestCheckout > 0 ? pl.highestCheckout : "-";
+
                 return `
-                    <div class="flex justify-between border-b border-slate-800 pb-1 mb-1">
-                        <span>${pl.name} (${config.targetSets > 0 ? `S:${pl.setsWon} ` : ''}L:${pl.legsWon})</span>
-                        <span class="text-emerald-400 font-bold">Ø ${avg}</span>
+                    <div class="py-3">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <span class="font-extrabold text-sm text-white">${pl.name}</span>
+                            <span class="text-xs text-slate-400 font-num">${config.targetSets > 0 ? `S:${pl.setsWon} | ` : ''}Legy: <b class="text-emerald-400">${pl.legsWon}</b></span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs font-num text-slate-300 bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
+                            <div class="flex justify-between"><span>3-Dart Ø:</span><b class="text-emerald-400">${avg}</b></div>
+                            <div class="flex justify-between"><span>First 9 Ø:</span><b class="text-blue-400">${f9Avg}</b></div>
+                            <div class="flex justify-between"><span>Max nához:</span><b class="text-amber-400">${pl.highestScore}</b></div>
+                            <div class="flex justify-between"><span>Nejvyšší OUT:</span><b class="text-emerald-400">${highCO}</b></div>
+                            <div class="flex justify-between"><span>Nejlepší leg:</span><b>${bestL}</b></div>
+                            <div class="flex justify-between"><span>Nejhorší leg:</span><b>${worstL}</b></div>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -834,7 +909,6 @@
             const fmtPrefix = config.formatType === 'first' ? 'FT' : 'BO';
             const setPart = config.targetSets > 0 ? ` [S:${config.targetSets}]` : '';
             document.getElementById('game-badge-format').innerText = `${fmtPrefix} ${config.targetLegs}L${setPart}`;
-
             document.getElementById('game-badge-online').classList.toggle('hidden', !isOnline);
 
             if (isOnline) {
@@ -848,29 +922,35 @@
                 document.getElementById('numpad-wrapper').style.pointerEvents = 'auto';
             }
 
+            // Karty obou hráčů s přehledným odlišením
             const turnBar = document.getElementById('players-turn-bar');
-            turnBar.className = `grid grid-cols-${matchData.playersState.length} gap-1 p-2 bg-slate-950 border-b border-slate-800/60 shrink-0`;
+            turnBar.className = `grid grid-cols-${matchData.playersState.length} gap-1.5 p-2 bg-slate-950 border-b border-slate-800/60 shrink-0`;
             turnBar.innerHTML = matchData.playersState.map((pl, idx) => {
                 const isActive = idx === matchData.activePlayerIdx;
                 const plDarts = pl.history.reduce((acc, h) => acc + h.dartsCount, 0);
                 const plScored = pl.history.reduce((a, b) => a + b.thrown, 0);
                 const plAvg = plDarts > 0 ? ((plScored / plDarts) * 3).toFixed(1) : "0.0";
+                const lastThrowText = pl.lastScore > 0 ? `-${pl.lastScore}` : (pl.history.length > 0 ? '-0' : '-');
 
                 return `
-                    <div class="p-3 rounded-lg border transition-all ${isActive ? 'bg-[#101b2b] border-emerald-500' : 'bg-slate-900 border-slate-800 opacity-60'}">
+                    <div class="p-2.5 rounded-xl border-2 transition-all relative ${isActive ? 'bg-[#0f1d2e] border-emerald-500 shadow-lg shadow-emerald-950/40' : 'bg-slate-900/80 border-transparent opacity-60'}">
                         <div class="flex justify-between items-center text-[11px] font-bold">
-                            <span class="truncate ${isActive ? 'text-emerald-400' : 'text-slate-400'}">${pl.name}</span>
+                            <span class="truncate ${isActive ? 'text-emerald-400 font-black' : 'text-slate-400'}">${pl.name}</span>
                             <span class="text-slate-300 font-num">${config.targetSets > 0 ? `S:${pl.setsWon} ` : ''}L:${pl.legsWon}</span>
                         </div>
-                        <div class="text-3xl font-num font-black text-white mt-1 leading-none">${pl.score}</div>
-                        <div class="flex justify-between items-center mt-2 text-[10px] text-slate-500 font-num font-bold">
-                            <span>Š: ${plDarts}</span>
-                            <span class="${isActive ? 'text-emerald-400' : ''}">Ø ${plAvg}</span>
+                        <div class="flex justify-between items-baseline mt-1">
+                            <div class="text-4xl font-num font-black text-white leading-none">${pl.score}</div>
+                            <div class="text-xs font-num font-bold text-orange-400">${lastThrowText}</div>
+                        </div>
+                        <div class="flex justify-between items-center mt-2 text-[10px] text-slate-400 font-num font-semibold">
+                            <span>Šipky: ${plDarts}</span>
+                            <span class="${isActive ? 'text-emerald-400 font-bold' : ''}">Ø ${plAvg}</span>
                         </div>
                     </div>
                 `;
             }).join('');
 
+            // Checkout
             const guide = document.getElementById('checkout-guide');
             const score = activePlayer.score;
 
@@ -897,11 +977,12 @@
                 guide.style.color = "#475569";
             }
 
+            // Historie legu
             const historyBody = document.getElementById('history-body');
-            historyBody.innerHTML = activePlayer.history.slice().reverse().map((r, i) => `
+            historyBody.innerHTML = matchData.legHistoryLog.map(r => `
                 <div class="flex justify-between items-center px-4 py-2 text-xs font-num bg-slate-950/40">
-                    <span class="text-slate-600 font-bold">${activePlayer.history.length - i}.</span>
-                    <span class="text-slate-400 font-bold">-${r.thrown}</span>
+                    <span class="text-slate-400 font-bold">${r.playerName}:</span>
+                    <span class="text-orange-400 font-bold">-${r.thrown}</span>
                     <span class="text-emerald-400 font-bold">${r.remaining}</span>
                 </div>
             `).join('');
@@ -926,31 +1007,42 @@
                 matchData.activePlayerIdx = prevPlayerIdx;
                 buffer = lastTurn.thrown > 0 ? lastTurn.thrown.toString() : "";
                 document.getElementById('buffer').innerText = buffer;
+
+                if (matchData.legHistoryLog.length > 0) {
+                    matchData.legHistoryLog.shift();
+                }
+
                 updateX01UI();
                 if (isOnline) sendOnlineSync();
             }
         }
 
-        // ================= SPOLEHLIVÉ ONLINE MQTT PROPOJENÍ =================
+        // ================= SPOLEHLIVÉ ONLINE PŘIPOJENÍ S DETEKCÍ ODPOJENÍ =================
         function generateRoomCode() {
             return Math.floor(1000 + Math.random() * 9000).toString();
         }
 
         function connectToMqttBroker(onSuccess) {
             myClientId = "pdarts_" + Math.random().toString(16).substr(2, 8);
-            // Veřejný, stabilní HiveMQ WebSocket broker
             mqttClient = new Paho.MQTT.Client("broker.hivemq.com", Number(8884), "/mqtt", myClientId);
+
+            // Last Will and Testament (oznámí druhému odpojení i při pádu sítě/zavření okna)
+            const willMessage = new Paho.MQTT.Message(JSON.stringify({
+                type: 'PLAYER_DISCONNECTED',
+                senderId: myClientId
+            }));
+            willMessage.destinationName = "prodarts_zlin_room_" + onlineRoomCode;
 
             mqttClient.onConnectionLost = (responseObject) => {
                 if (responseObject.errorCode !== 0 && isOnline) {
-                    console.log("MQTT ztráta spojení:", responseObject.errorMessage);
+                    console.log("MQTT spojení ztraceno:", responseObject.errorMessage);
                 }
             };
 
             mqttClient.onMessageArrived = (message) => {
                 try {
                     const data = JSON.parse(message.payloadString);
-                    if (data.senderId === myClientId) return; // Ignorovat vlastní zprávy
+                    if (data.senderId === myClientId) return;
                     handleIncomingOnlineMessage(data);
                 } catch(e) {
                     console.error("Chyba při čtení zprávy", e);
@@ -960,6 +1052,7 @@
             mqttClient.connect({
                 useSSL: true,
                 timeout: 5,
+                willMessage: willMessage,
                 onSuccess: onSuccess,
                 onFailure: (err) => {
                     alert("Nelze se spojit se serverem: " + err.errorMessage);
@@ -977,7 +1070,6 @@
             connectToMqttBroker(() => {
                 const topic = "prodarts_zlin_room_" + onlineRoomCode;
                 mqttClient.subscribe(topic);
-                console.log("Host naslouchá na:", topic);
             });
         }
 
@@ -1006,7 +1098,6 @@
                 btn.innerText = "Připojit";
                 btn.disabled = false;
 
-                // Host se ohlásí hostovi
                 sendOnlineMessage({
                     type: 'JOIN_REQUEST',
                     guestName: guestName
@@ -1045,6 +1136,9 @@
             } else if (data.type === 'SYNC') {
                 matchData = data.matchData;
                 updateX01UI();
+            } else if (data.type === 'PLAYER_DISCONNECTED') {
+                // Druhý hráč se odpojil
+                document.getElementById('disconnect-overlay').style.display = 'flex';
             }
         }
 
@@ -1066,8 +1160,11 @@
         }
 
         function exitGameConfirmed() {
-            if (mqttClient && mqttClient.isConnected()) {
-                try { mqttClient.disconnect(); } catch(e){}
+            if (isOnline) {
+                sendOnlineMessage({ type: 'PLAYER_DISCONNECTED' });
+                if (mqttClient && mqttClient.isConnected()) {
+                    try { mqttClient.disconnect(); } catch(e){}
+                }
             }
             isOnline = false;
             goToScreen('screen-main-menu');
@@ -1263,9 +1360,7 @@
                 name: p.name,
                 points: 0,
                 dartsThrown: 0,
-                hits: {
-                    20: 0, 19: 0, 18: 0, 17: 0, 16: 0, 15: 0, 'BULL': 0
-                }
+                hits: { 20: 0, 19: 0, 18: 0, 17: 0, 16: 0, 15: 0, 'BULL': 0 }
             }));
 
             updateCricketUI();
