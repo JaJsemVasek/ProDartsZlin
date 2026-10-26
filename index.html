@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Pro Darts Zlín</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PeerJS pro online P2P spojení zdarma bez vlastního serveru -->
     <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@500;600;700;800;900&display=swap');
@@ -98,7 +97,7 @@
         </div>
     </div>
 
-    <!-- ONLINE LOBBY (HOST / JOIN) -->
+    <!-- ONLINE LOBBY -->
     <div id="screen-online-lobby" class="hidden flex flex-col h-full w-full p-4 z-40 max-w-md mx-auto justify-between">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
             <button onclick="goToScreen('screen-main-menu')" class="text-slate-400 font-bold text-xs uppercase hover:text-white">← Zpět</button>
@@ -108,35 +107,35 @@
 
         <div class="flex flex-col gap-4 my-auto w-full">
             <div>
-                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Tvoje přezdívka</span>
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 block">Tvoje jméno</span>
                 <input id="online-my-name" type="text" value="Hráč 1" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-sm font-bold text-white outline-none focus:border-blue-500">
             </div>
 
             <!-- Vytvořit -->
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                <span class="text-white font-black text-lg block font-num">Vytvořit hru (Host)</span>
-                <p class="text-slate-500 text-xs mt-0.5 mb-3">Nastavíš pravidla a dáš kód bratrancovi.</p>
+                <span class="text-white font-black text-lg block font-num">Vytvořit hru</span>
+                <p class="text-slate-500 text-xs mt-0.5 mb-3">Nastav parametry zápasu a získej kód pro druhého hráče.</p>
                 <button onclick="setupOnlineHostConfig()" class="w-full btn-blue py-3 rounded-lg text-xs uppercase font-extrabold">Vytvořit místnost</button>
             </div>
 
             <!-- Připojit se -->
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
-                <span class="text-white font-black text-lg block font-num">Připojit se (Join)</span>
-                <p class="text-slate-500 text-xs mt-0.5 mb-3">Zadej 4místný kód od protihráče.</p>
+                <span class="text-white font-black text-lg block font-num">Připojit se ke hře</span>
+                <p class="text-slate-500 text-xs mt-0.5 mb-3">Zadej kód od protihráče.</p>
                 <div class="flex gap-2">
-                    <input id="online-join-code" type="text" maxlength="4" placeholder="KÓD" class="w-24 text-center uppercase tracking-widest font-num bg-slate-950 border border-slate-800 rounded-lg text-lg font-black text-emerald-400 outline-none focus:border-blue-500">
-                    <button onclick="joinOnlineRoom()" class="flex-grow btn-green py-3 rounded-lg text-xs uppercase font-extrabold">Připojit</button>
+                    <input id="online-join-code" type="text" maxlength="4" placeholder="KÓD" class="w-28 text-center uppercase tracking-widest font-num bg-slate-950 border border-slate-800 rounded-lg text-lg font-black text-emerald-400 outline-none focus:border-blue-500">
+                    <button onclick="joinOnlineRoom()" id="btn-join-room" class="flex-grow btn-green py-3 rounded-lg text-xs uppercase font-extrabold">Připojit</button>
                 </div>
             </div>
         </div>
         <div class="h-4"></div>
     </div>
 
-    <!-- ONLINE WAITING SCREEN PRO HOSTA -->
+    <!-- ONLINE ČEKAJÍCÍ OBRAZOVKA (HOST) -->
     <div id="screen-online-waiting" class="hidden flex flex-col h-full w-full p-6 z-40 max-w-md mx-auto items-center justify-center text-center">
         <span class="text-xs uppercase font-bold text-slate-500 tracking-wider">Kód tvé místnosti</span>
         <div id="online-display-code" class="text-6xl font-num font-black text-blue-400 my-4 tracking-widest bg-slate-900 px-6 py-3 rounded-2xl border border-slate-800">----</div>
-        <p class="text-slate-400 text-xs max-w-xs mb-6">Pošli tento 4místný kód bratrancovi. Hra začne automaticky po připojení.</p>
+        <p class="text-slate-400 text-xs max-w-xs mb-6">Pošli kód hráči. Hra začne automaticky po připojení.</p>
         <button onclick="cancelOnline()" class="bg-slate-800 text-slate-300 py-2.5 px-6 rounded-xl text-xs uppercase font-bold">Zrušit</button>
     </div>
 
@@ -282,7 +281,6 @@
             <div id="history-body" class="divide-y divide-slate-900"></div>
         </div>
 
-        <!-- Waiting banner pro soupeře v online módu -->
         <div id="online-wait-turn" class="hidden bg-blue-950/70 border-t border-blue-900 text-blue-300 text-center py-2 text-xs font-bold font-num uppercase tracking-wider shrink-0">
             Čekej na hod soupeře...
         </div>
@@ -524,6 +522,15 @@
         let isHost = false;
         let peer = null;
         let connection = null;
+
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' }
+                ]
+            }
+        };
 
         // ================= X01 =================
         const config = {
@@ -837,7 +844,6 @@
 
             document.getElementById('game-badge-online').classList.toggle('hidden', !isOnline);
 
-            // Numpad vs Čekání na tah
             if (isOnline) {
                 const myTurn = isMyTurnOnline();
                 document.getElementById('online-wait-turn').classList.toggle('hidden', myTurn);
@@ -932,46 +938,46 @@
             }
         }
 
-        // ================= ONLINE LOGIKA (P2P PEERJS) =================
+        // ================= ONLINE LOGIKA =================
         function generateRoomCode() {
             return Math.floor(1000 + Math.random() * 9000).toString();
         }
 
         function initHostOnlineRoom() {
-            const hostName = document.getElementById('online-my-name').value.trim() || "Host";
+            const hostName = document.getElementById('online-my-name').value.trim() || "Hráč 1";
             const code = generateRoomCode();
             document.getElementById('online-display-code').innerText = code;
             goToScreen('screen-online-waiting');
 
-            if (peer) peer.destroy();
-            peer = new Peer('prodz-' + code);
+            if (peer) {
+                try { peer.destroy(); } catch(e){}
+            }
+
+            // Unikátní prefix pro spolehlivé spojení
+            const peerId = 'prodarts-room-' + code;
+            peer = new Peer(peerId, peerConfig);
 
             peer.on('open', () => {
-                console.log('Online místnost vytvořena s kódem:', code);
+                console.log('Host čeká na kód:', code);
             });
 
             peer.on('connection', (conn) => {
                 connection = conn;
-                setupConnectionListeners();
-
-                // Pošleme hostovu konfiguraci a jméno
-                connection.on('open', () => {
-                    connection.send({
-                        type: 'INIT_CONFIG',
-                        hostName: hostName,
-                        config: config
-                    });
-                });
+                setupConnectionHandlers();
             });
 
             peer.on('error', (err) => {
-                alert('Chyba online připojení: ' + err.type);
-                goToScreen('screen-online-lobby');
+                if (err.type === 'unavailable-id') {
+                    initHostOnlineRoom();
+                } else {
+                    alert('Chyba online spojení: ' + err.type);
+                    goToScreen('screen-online-lobby');
+                }
             });
         }
 
         function joinOnlineRoom() {
-            const guestName = document.getElementById('online-my-name').value.trim() || "Bratranec";
+            const guestName = document.getElementById('online-my-name').value.trim() || "Hráč 2";
             const code = document.getElementById('online-join-code').value.trim();
 
             if (code.length !== 4) {
@@ -979,36 +985,48 @@
                 return;
             }
 
+            const btn = document.getElementById('btn-join-room');
+            btn.innerText = "Připojuji...";
+            btn.disabled = true;
+
             isOnline = true;
             isHost = false;
             currentGameType = 'x01';
 
-            if (peer) peer.destroy();
-            peer = new Peer();
+            if (peer) {
+                try { peer.destroy(); } catch(e){}
+            }
+
+            peer = new Peer(peerConfig);
 
             peer.on('open', () => {
-                connection = peer.connect('prodz-' + code);
-                setupConnectionListeners();
+                const targetHostId = 'prodarts-room-' + code;
+                connection = peer.connect(targetHostId, { reliable: true });
 
                 connection.on('open', () => {
+                    btn.innerText = "Připojit";
+                    btn.disabled = false;
                     connection.send({
                         type: 'JOIN_HELLO',
                         guestName: guestName
                     });
                 });
+
+                setupConnectionHandlers();
             });
 
             peer.on('error', (err) => {
-                alert('Nelze se připojit k místnosti s tímto kódem.');
+                btn.innerText = "Připojit";
+                btn.disabled = false;
+                alert('Nepodařilo se připojit k místnosti ' + code);
                 goToScreen('screen-online-lobby');
             });
         }
 
-        function setupConnectionListeners() {
+        function setupConnectionHandlers() {
             connection.on('data', (data) => {
                 if (data.type === 'JOIN_HELLO' && isHost) {
-                    // Host obdrží jméno hosta a spustí hru pro oba
-                    const hostName = document.getElementById('online-my-name').value.trim() || "Host";
+                    const hostName = document.getElementById('online-my-name').value.trim() || "Hráč 1";
                     players = [
                         { id: 1, name: hostName },
                         { id: 2, name: data.guestName }
@@ -1021,14 +1039,12 @@
                         matchData: matchData
                     });
                 } else if (data.type === 'START_GAME' && !isHost) {
-                    // Host přijme start
                     players = data.players;
                     Object.assign(config, data.config);
                     matchData = data.matchData;
                     goToScreen('game-screen');
                     updateX01UI();
                 } else if (data.type === 'SYNC') {
-                    // Synchronizace stavu po hodu
                     matchData = data.matchData;
                     updateX01UI();
                 }
@@ -1050,12 +1066,12 @@
         }
 
         function cancelOnline() {
-            if (peer) peer.destroy();
+            if (peer) try { peer.destroy(); } catch(e){}
             goToScreen('screen-online-lobby');
         }
 
         function exitGameConfirmed() {
-            if (peer) peer.destroy();
+            if (peer) try { peer.destroy(); } catch(e){}
             isOnline = false;
             goToScreen('screen-main-menu');
         }
